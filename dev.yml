@@ -1,0 +1,5 @@
+version: '1'
+setup:
+  - type: shell
+    description: Test
+    command: npm install

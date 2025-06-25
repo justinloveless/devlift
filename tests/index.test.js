@@ -1,5 +1,8 @@
 import { exec } from 'child_process';
-import pkg from '../package.json' with { type: 'json' };
+import fs from 'fs';
+import path from 'path';
+
+const pkg = JSON.parse(fs.readFileSync(path.resolve('./package.json'), 'utf-8'));
 
 describe('CLI Tool', () => {
     it('should return the correct version', (done) => {
