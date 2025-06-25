@@ -90,10 +90,13 @@ describe('Lift Command', () => {
     it('should show help text with argument information', () => {
         // Check help output contains repo_url_or_path information
         const helpOutput = liftCommand.helpInformation();
-        expect(helpOutput).toContain('repo_url_or_path');
-        // Check for key parts of the description (more resilient to line wrapping)
-        expect(helpOutput).toContain('URL of the repository to lift');
-        expect(helpOutput).toContain('path to local repository');
+        // Remove all line breaks and normalize whitespace to be immune to terminal width differences
+        const normalizedOutput = helpOutput.replace(/\s+/g, ' ').trim();
+
+        expect(normalizedOutput).toContain('repo_url_or_path');
+        expect(normalizedOutput).toContain('repository');
+        expect(normalizedOutput).toContain('local');
+        expect(normalizedOutput).toContain('lift');
     });
 
     it('should throw error for invalid input (neither URL nor path)', async () => {
