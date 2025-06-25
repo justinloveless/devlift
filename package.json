@@ -1,6 +1,6 @@
 {
   "name": "devlift",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
@@ -18,7 +18,9 @@
     "version:current": "cat VERSION",
     "version:bump": "node scripts/bump-version.js",
     "prepublishOnly": "npm run version:sync && npm run build && npm test",
-    "publish:safe": "node scripts/publish.js"
+    "publish:safe": "node scripts/publish.js",
+    "release": "node scripts/publish-with-bump.js",
+    "release:dry-run": "node scripts/publish-with-bump.js --dry-run"
   },
   "keywords": [],
   "author": "",

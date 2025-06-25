@@ -76,13 +76,27 @@ This project uses a `VERSION` file as the single source of truth for version num
 
 #### Publishing Workflow
 
+**Recommended: One-Command Release**
+```bash
+# Full release workflow
+npm run release
+
+# Test the workflow without actually publishing
+npm run release:dry-run
+```
+
+This runs a complete workflow that:
+1. **Interactive version bump** - Choose patch/minor/major
+2. **Run full test suite** - Ensures code quality  
+3. **Build the project** - Compiles TypeScript
+4. **Publish to npm** - Only if all steps succeed
+5. **Create git tag** - Optional version tagging
+6. **Auto-revert on failure** - Reverts version if tests/build fail
+
+Use `npm run release:dry-run` to test the entire workflow without making any permanent changes.
+
+**Manual Steps (if needed):**
 1. **Bump the version**: `npm run version:bump patch`
 2. **Publish safely**: `npm run publish:safe`
 
-The safe publish script will:
-- Sync the VERSION file to package.json
-- Build the TypeScript code
-- Run all tests
-- Publish to npm
-
-This ensures that every published version is properly tested and built from the correct version number. 
+The release script ensures you never publish broken code and maintains version consistency by automatically reverting version changes if any step fails. 
