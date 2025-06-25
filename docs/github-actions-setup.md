@@ -2,6 +2,26 @@
 
 This project uses GitHub Actions for automated publishing to npm. This guide will help you set up the necessary secrets and understand the workflow.
 
+## Quick Setup (Recommended)
+
+Run the interactive setup script that will guide you through the entire process:
+
+```bash
+npm run setup:github-actions
+```
+
+This script will walk you through:
+- Creating an npm access token
+- Adding the token to GitHub repository secrets  
+- Setting up optional environment protection
+- Testing the setup
+
+After running this script, you can immediately start publishing with `npm run release:prepare`.
+
+## Manual Setup
+
+If you prefer to set up manually, follow these detailed steps:
+
 ## Required Secrets
 
 ### 1. NPM_TOKEN
@@ -45,7 +65,7 @@ For additional security, set up an environment for npm publishing:
 - Pull requests to `main` or `develop` branches
 
 **Jobs:**
-- **Test**: Runs tests on Node.js 16, 18, and 20
+- **Test**: Runs tests on Node.js 18, 20, and 22
 - **Type Check**: Validates TypeScript compilation
 - **Validate Config**: Checks VERSION file and version sync
 - **Security**: Runs npm audit for vulnerabilities

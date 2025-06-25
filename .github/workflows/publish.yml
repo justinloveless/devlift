@@ -98,6 +98,18 @@ jobs:
             echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
           fi
           
+      - name: Verify npm authentication
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "❌ NPM_TOKEN secret is not set or empty"
+            echo "Please add NPM_TOKEN to your GitHub repository secrets"
+            exit 1
+          fi
+          echo "✅ NPM_TOKEN is configured"
+          npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
       - name: Check if version exists on npm
         run: |
           VERSION=${{ steps.version.outputs.version }}

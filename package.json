@@ -22,17 +22,20 @@
     "release": "node scripts/publish-with-bump.js",
     "release:dry-run": "node scripts/publish-with-bump.js --dry-run",
     "release:prepare": "node scripts/release-prepare.js",
-    "release:prepare:dry-run": "node scripts/release-prepare.js --dry-run"
+    "release:prepare:dry-run": "node scripts/release-prepare.js --dry-run",
+    "setup:github-actions": "node scripts/setup-github-actions.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "chalk": "^5.4.1",
     "commander": "^14.0.0",
     "execa": "^9.6.0",
     "fs-extra": "^11.3.0",
-    "inquirer": "^12.6.3",
     "js-yaml": "^4.1.0",
     "simple-git": "^3.28.0"
   },
@@ -43,6 +46,7 @@
     "@types/jest": "^29.5.14",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.0.4",
+    "inquirer": "^12.6.3",
     "jest": "^30.0.3",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",

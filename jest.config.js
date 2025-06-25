@@ -21,11 +21,15 @@ export default {
     // The directory where Jest should output its coverage files
     coverageDirectory: 'coverage',
 
-    // Global configuration for ts-jest
-    globals: {
-        'ts-jest': {
-            useESM: true
-        }
+    // Transform configuration for ts-jest
+    transform: {
+        '^.+\\.ts$': ['ts-jest', {
+            useESM: true,
+            tsconfig: {
+                module: 'ES2020',
+                target: 'ES2020'
+            }
+        }]
     },
 
     // Module name mapping for ES module imports
@@ -36,5 +40,8 @@ export default {
     // Transform ignore patterns to handle ESM modules in node_modules
     transformIgnorePatterns: [
         'node_modules/(?!(chalk|execa|inquirer)/)'
-    ]
+    ],
+
+    // Limit workers for CI environments
+    maxWorkers: process.env.CI ? 2 : '50%'
 }; 

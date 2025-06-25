@@ -9,6 +9,8 @@ Setting up a new project locally is often a manual, time-consuming, and error-pr
 
 ## Installation
 
+**Requirements:** Node.js 18.0.0 or higher
+
 Install `devlift` globally via npm:
 
 ```bash
@@ -91,7 +93,7 @@ This modern workflow:
 3. **Create git tag** - Triggers GitHub Actions
 4. **Automated CI/CD** - GitHub Actions handles publishing
 5. **Security** - Uses npm tokens stored as secrets
-6. **Multi-environment testing** - Tests on Node 16, 18, 20
+6. **Multi-environment testing** - Tests on Node 18, 20, 22
 
 **Legacy: Local Publishing (Not Recommended)**
 ```bash
