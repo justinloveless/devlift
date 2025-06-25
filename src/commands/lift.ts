@@ -1,8 +1,8 @@
 import { Command } from 'commander';
-import simpleGit from 'simple-git';
+import { simpleGit } from 'simple-git';
 import { isValidGitUrl } from '../utils/validation.js';
 import { getClonePath } from '../utils/path.js';
-import { loadConfig } from '../core/config.js';
+import { loadConfig, Config } from '../core/config.js';
 import { ExecutionEngine } from '../core/execution-engine.js';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
@@ -13,7 +13,7 @@ const lift = new Command('lift')
     .description('Lift a repository into a local development environment')
     .argument('<repo_url>', 'The URL of the repository to lift')
     .option('-y, --yes', 'Skip all interactive prompts')
-    .action(async (repoUrl, options) => {
+    .action(async (repoUrl: string, options: { yes?: boolean }) => {
         // 1. Validate URL
         if (!isValidGitUrl(repoUrl)) {
             throw new Error('Invalid Git repository URL.');
@@ -27,7 +27,7 @@ const lift = new Command('lift')
 
             // 3. Load and validate config
             console.log(chalk.blue('Looking for dev.yml...'));
-            let config = loadConfig(clonePath);
+            let config: Config | null = loadConfig(clonePath);
             if (!config) {
                 console.log(chalk.yellow('No dev.yml configuration found.'));
 
@@ -70,7 +70,8 @@ const lift = new Command('lift')
 
             console.log(chalk.green('✅ Setup complete!'));
         } catch (error) {
-            console.error(chalk.red(`An error occurred: ${error.message}`));
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(chalk.red(`An error occurred: ${errorMessage}`));
             throw error;
         }
     });

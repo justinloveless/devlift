@@ -1,4 +1,8 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 export default {
+    preset: 'ts-jest/presets/default-esm',
+    extensionsToTreatAsEsm: ['.ts'],
+
     // A list of paths to directories that Jest should use to search for files in
     roots: ['<rootDir>/src', '<rootDir>/tests'],
 
@@ -6,7 +10,7 @@ export default {
     testEnvironment: 'node',
 
     // The file patterns Jest uses to detect test files
-    testMatch: ['**/tests/**/*.test.js', '**/?(*.)+(spec|test).js'],
+    testMatch: ['**/tests/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
 
     // Automatically clear mock calls and instances between every test
     clearMocks: true,
@@ -17,6 +21,15 @@ export default {
     // The directory where Jest should output its coverage files
     coverageDirectory: 'coverage',
 
-    // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
-    transformIgnorePatterns: ['/node_modules/'],
+    // Transform configuration for ES modules and TypeScript
+    transform: {
+        '^.+\\.tsx?$': ['ts-jest', {
+            useESM: true
+        }]
+    },
+
+    // Module name mapping for ES module imports
+    moduleNameMapper: {
+        '^(\\.{1,2}/.*)\\.js$': '$1'
+    }
 }; 

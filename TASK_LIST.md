@@ -1,4 +1,4 @@
-# Dev-CLI V1 - Detailed Task List & TDD Workflow
+# DevLift V1 - Detailed Task List & TDD Workflow
 
 This document outlines the specific tasks required to build Version 1 of the `dev` CLI tool. It is structured to follow a **Test-Driven Development (TDD)** workflow.
 
@@ -78,7 +78,7 @@ For each feature, follow this cycle:
 - [x] **3.2. Implement Clone Path Generator**
     - [x] **3.2.1. Write Tests for `path.js`:**
         - [x] Create `tests/utils/path.test.js`.
-        - [x] Write a test for `getClonePath` that mocks the `os.homedir()` method to ensure predictable output. Assert that a URL like `https://github.com/org/repo.git` correctly resolves to `mocked_home/dev-cli/clones/github.com/org/repo`.
+        - [x] Write a test for `getClonePath` that mocks the `os.homedir()` method to ensure predictable output. Assert that a URL like `https://github.com/org/repo.git` correctly resolves to `mocked_home/devlift/clones/github.com/org/repo`.
     - [x] **3.2.2. Run Tests to Confirm Failure:** Run `npm test`.
     - [x] **3.2.3. Implement `path.js`:** Create `src/utils/path.js` and write the `getClonePath` function.
     - [x] **3.2.4. Run Tests to Confirm Pass:** Run `npm test` until path tests pass.
@@ -165,7 +165,7 @@ For each feature, follow this cycle:
 ## Phase 8: Global Configuration and Non-Functional Requirements
 
 - [x] **8.1. Implement User-Configurable Clone Directory**
-    - [x] **Test:** In `path.test.js`, add a test where a global config file is mocked (`~/.dev-cli/config.json`). Assert that `getClonePath` respects the `basePath` from this file instead of using the default.
+    - [x] **Test:** In `path.test.js`, add a test where a global config file is mocked (`~/.devlift/config.json`). Assert that `getClonePath` respects the `basePath` from this file instead of using the default.
     - [x] **Implement:** Create a new module in `src/core` to load global configuration from a file in the user's home directory. Update `getClonePath` in `src/utils/path.js` to use this configuration.
     - [x] **Run & Pass:** Ensure tests pass.
 - [ ] **8.2. Formalize Cross-Platform Testing Strategy**

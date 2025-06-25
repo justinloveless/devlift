@@ -4,6 +4,12 @@ import fs from 'fs-extra';
 import yaml from 'js-yaml';
 import chalk from 'chalk';
 
+interface SetupStep {
+    type: string;
+    description: string;
+    command: string;
+}
+
 const prep = new Command('prep')
     .description('Prepare a new dev.yml configuration file for the current project')
     .action(async () => {
@@ -22,8 +28,8 @@ const prep = new Command('prep')
             }
         }
 
-        console.log(chalk.cyan("Welcome to the dev-cli configuration wizard!"));
-        const steps = [];
+        console.log(chalk.cyan("Welcome to the devlift configuration wizard!"));
+        const steps: SetupStep[] = [];
         let addAnotherStep = true;
 
         while (addAnotherStep) {

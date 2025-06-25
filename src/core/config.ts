@@ -3,12 +3,26 @@ import path from 'path';
 import yaml from 'js-yaml';
 import { validateConfig } from './validator.js';
 
+interface SetupStep {
+    name: string;
+    type: 'shell' | 'package-manager';
+    command: string;
+    depends_on?: string[];
+    manager?: string;
+}
+
+export interface Config {
+    setup_steps?: SetupStep[];
+    setup?: SetupStep[];  // For backward compatibility with tests
+    version?: string;
+}
+
 /**
  * Loads and parses the dev.yml configuration file from a given directory.
- * @param {string} directory - The directory to search for the dev.yml file.
- * @returns {object | null} The parsed configuration object, or null if the file doesn't exist.
+ * @param directory - The directory to search for the dev.yml file.
+ * @returns The parsed configuration object, or null if the file doesn't exist.
  */
-export function loadConfig(directory) {
+export function loadConfig(directory: string): Config | null {
     const configPath = path.join(directory, 'dev.yml');
 
     if (!fs.existsSync(configPath)) {
@@ -18,7 +32,7 @@ export function loadConfig(directory) {
     }
 
     const fileContents = fs.readFileSync(configPath, 'utf8');
-    const config = yaml.load(fileContents);
+    const config = yaml.load(fileContents) as Config;
 
     validateConfig(config);
 

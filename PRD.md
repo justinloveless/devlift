@@ -1,4 +1,4 @@
-# Product Requirements Document: "Dev-CLI"
+# Product Requirements Document: "DevLift"
 
 ## 1. Executive Summary
 
@@ -34,7 +34,7 @@ This file is the heart of the tool. It will be a YAML file, located in the root 
 # A human-readable name for the project, used in logs and prompts.
 project_name: "My Awesome Web App"
 
-# The version of the dev-cli configuration schema.
+# The version of the devlift configuration schema.
 version: "1"
 
 # Defines environment variables needed for the project.

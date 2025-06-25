@@ -1,9 +1,9 @@
-import { jest, describe, it, expect } from '@jest/globals';
-import { validateConfig } from '../../src/core/validator';
+import { describe, it, expect } from '@jest/globals';
+import { validateConfig } from '../../src/core/validator.js';
 
 describe('Configuration Validator', () => {
     it('should not throw an error for a valid configuration', () => {
-        const config = {
+        const config: any = {
             version: '1',
             project_name: 'My Awesome Web App',
             environment: {
@@ -13,7 +13,7 @@ describe('Configuration Validator', () => {
                     { name: 'API_KEY', prompt: 'Enter your personal API key for the external service:', secret: true }
                 ]
             },
-            setup_steps: [
+            setup: [
                 { name: 'Install Node.js Dependencies', type: 'package-manager', manager: 'pnpm', command: 'install' },
                 { name: 'Start Local Database', type: 'shell', command: 'docker-compose up -d' },
                 { name: 'Run Database Migrations', type: 'shell', command: 'npm run db:migrate', depends_on: ['Start Local Database'] }
@@ -27,14 +27,14 @@ describe('Configuration Validator', () => {
     });
 
     it('should throw an error for a configuration with an unsupported version', () => {
-        const config = { version: '2', setup: [] };
+        const config: any = { version: '2', setup: [] };
         expect(() => validateConfig(config)).toThrow('Unsupported configuration version: 2');
     });
 
     it('should throw an error for a configuration with invalid step types', () => {
-        const config = {
+        const config: any = {
             version: '1',
-            setup_steps: [
+            setup: [
                 { name: 'Invalid Step', type: 'invalid-type' }
             ]
         };
@@ -42,9 +42,9 @@ describe('Configuration Validator', () => {
     });
 
     it('should throw an error for a configuration with a missing required field', () => {
-        const config = {
+        const config: any = {
             version: '1',
-            setup_steps: [
+            setup: [
                 { name: 'Missing Type' }
             ]
         };
@@ -52,8 +52,8 @@ describe('Configuration Validator', () => {
     });
 
     it('should throw an error for a configuration with a missing version field', () => {
-        const config = {
-            setup_steps: [
+        const config: any = {
+            setup: [
                 { name: 'Valid Step', type: 'shell', command: 'echo "Hello"' }
             ]
         };

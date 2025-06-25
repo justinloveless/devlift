@@ -2,17 +2,18 @@
   "name": "devlift",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "type": "module",
   "bin": {
     "dev": "bin/dev.js"
   },
   "files": [
     "bin",
-    "src"
+    "dist"
   ],
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
@@ -28,7 +29,14 @@
   },
   "devDependencies": {
     "@babel/preset-env": "^7.27.2",
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.8",
+    "@types/jest": "^29.5.14",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.0.4",
-    "jest": "^30.0.3"
+    "jest": "^30.0.3",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }

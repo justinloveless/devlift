@@ -3,14 +3,26 @@ import { execa } from 'execa';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
+import { Config } from './config.js';
+
+interface SetupStep {
+    name: string;
+    type: 'shell' | 'package-manager';
+    command: string;
+    depends_on?: string[];
+    manager?: string;
+}
 
 export class ExecutionEngine {
-    constructor(config, directory) {
+    private config: Config;
+    private directory: string;
+
+    constructor(config: Config, directory: string) {
         this.config = config;
         this.directory = directory;
     }
 
-    async run() {
+    async run(): Promise<void> {
         if (!this.config.setup_steps) {
             return;
         }
@@ -26,11 +38,12 @@ export class ExecutionEngine {
         }
     }
 
-    #log(message, color = 'cyan') {
-        console.log(chalk[color](message));
+    #log(message: string, color: keyof typeof chalk = 'cyan'): void {
+        const colorFn = chalk[color] as (text: string) => string;
+        console.log(colorFn(message));
     }
 
-    #determinePackageManager(step) {
+    #determinePackageManager(step: SetupStep): string {
         if (step.manager) {
             return step.manager;
         }
@@ -46,7 +59,7 @@ export class ExecutionEngine {
         return 'npm';
     }
 
-    async #handlePackageManagerStep(step) {
+    async #handlePackageManagerStep(step: SetupStep): Promise<void> {
         const manager = this.#determinePackageManager(step);
         const command = `${manager} ${step.command}`;
 
@@ -58,9 +71,9 @@ export class ExecutionEngine {
         });
     }
 
-    #topologicalSort(steps) {
-        const graph = new Map();
-        const inDegree = new Map();
+    #topologicalSort(steps: SetupStep[]): SetupStep[] {
+        const graph = new Map<string, string[]>();
+        const inDegree = new Map<string, number>();
         const stepMap = new Map(steps.map(step => [step.name, step]));
 
         for (const step of steps) {
@@ -71,26 +84,30 @@ export class ExecutionEngine {
         for (const step of steps) {
             if (step.depends_on) {
                 for (const depName of step.depends_on) {
-                    graph.get(depName).push(step.name);
-                    inDegree.set(step.name, inDegree.get(step.name) + 1);
+                    graph.get(depName)?.push(step.name);
+                    inDegree.set(step.name, (inDegree.get(step.name) || 0) + 1);
                 }
             }
         }
 
-        const queue = [];
+        const queue: string[] = [];
         for (const [name, degree] of inDegree.entries()) {
             if (degree === 0) {
                 queue.push(name);
             }
         }
 
-        const sorted = [];
+        const sorted: SetupStep[] = [];
         while (queue.length > 0) {
-            const name = queue.shift();
-            sorted.push(stepMap.get(name));
+            const name = queue.shift()!;
+            const step = stepMap.get(name);
+            if (step) {
+                sorted.push(step);
+            }
 
-            for (const neighbor of graph.get(name)) {
-                inDegree.set(neighbor, inDegree.get(neighbor) - 1);
+            const neighbors = graph.get(name) || [];
+            for (const neighbor of neighbors) {
+                inDegree.set(neighbor, (inDegree.get(neighbor) || 0) - 1);
                 if (inDegree.get(neighbor) === 0) {
                     queue.push(neighbor);
                 }
@@ -104,7 +121,7 @@ export class ExecutionEngine {
         return sorted;
     }
 
-    async #handleShellStep(step) {
+    async #handleShellStep(step: SetupStep): Promise<void> {
         this.#log(`\nRunning shell command: ${step.name}`);
 
         const { proceed } = await inquirer.prompt([
