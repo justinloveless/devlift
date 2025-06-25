@@ -120,14 +120,14 @@ For each feature, follow this cycle:
 
 ## Phase 6: `dev init` Command (Interactive Wizard)
 
-- [ ] **6.1. Write Tests for `init` Command**
-    - [ ] Create `tests/commands/init.test.js`.
-    - [ ] Mock `fs-extra` and `inquirer`.
-    - [ ] Write a test that simulates a directory state (e.g., `package.json` exists).
-    - [ ] Mock the return values of `inquirer.prompt` to simulate a full set of user answers.
-    - [ ] Assert that the final call to `fs-extra.writeFileSync` (or similar) contains a correctly formatted YAML string based on the mocked inputs.
-- [ ] **6.2. Run Tests to Confirm Failure:** Run `npm test`.
-- [ ] **6.3. Implement `init` Command Logic**
-    - [ ] In `src/commands/init.js`, implement the interactive wizard using `inquirer`, your directory inspection logic, and `js-yaml` to generate the final file.
-- [ ] **6.4. Run Tests to Confirm Pass:** Run `npm test` until `init` command tests pass.
-- [ ] **6.5. Commit and Update:** Commit the `init` feature and check off all tasks. You have reached V1! 
+- [x] **6.1. Write Tests for `init` Command**
+    - [x] Create `tests/commands/init.test.js`.
+    - [x] Mock `fs-extra` and `inquirer`.
+    - [x] Write a test that simulates a directory state (e.g., `package.json` exists).
+    - [x] Mock the return values of `inquirer.prompt` to simulate a full set of user answers.
+    - [x] Assert that the final call to `fs-extra.writeFileSync` (or similar) contains a correctly formatted YAML string based on the mocked inputs.
+- [x] **6.2. Run Tests to Confirm Failure:** Run `npm test`.
+- [x] **6.3. Implement `init` Command Logic**
+    - [x] In `src/commands/init.js`, implement the interactive wizard using `inquirer`, your directory inspection logic, and `js-yaml` to generate the final file.
+- [x] **6.4. Run Tests to Confirm Pass:** Run `npm test` until `init` command tests pass.
+- [x] **6.5. Commit and Update:** Commit the `init` feature and check off all tasks. You have reached V1! 
