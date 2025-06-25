@@ -14,6 +14,12 @@ on:
         required: false
         type: string
 
+# Required permissions for GitHub release creation
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
 env:
   NODE_VERSION: '18'
 
@@ -125,27 +131,27 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           
       - name: Create GitHub release
-        uses: actions/create-release@v1
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          TAG_NAME="v${VERSION}"
+          
+          # Create release using GitHub CLI
+          gh release create "$TAG_NAME" \
+            --title "Release v${VERSION}" \
+            --notes "## 🚀 Release v${VERSION}
+
+          Published to npm: https://www.npmjs.com/package/devlift/v/${VERSION}
+          
+          ### Installation
+          \`\`\`bash
+          npm install -g devlift@${VERSION}
+          \`\`\`
+          
+          ### Changes
+          - See commit history for detailed changes" \
+            --latest
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          release_name: Release v${{ steps.version.outputs.version }}
-          body: |
-            ## 🚀 Release v${{ steps.version.outputs.version }}
-            
-            Published to npm: https://www.npmjs.com/package/devlift/v/${{ steps.version.outputs.version }}
-            
-            ### Installation
-            ```bash
-            npm install -g devlift@${{ steps.version.outputs.version }}
-            ```
-            
-            ### Changes
-            - See commit history for detailed changes
-            
-          draft: false
-          prerelease: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   notification:
     name: Notify Success
@@ -154,7 +160,12 @@ jobs:
     if: success()
     
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
       - name: Success notification
         run: |
-          echo "🎉 Successfully published devlift v$(cat VERSION || echo 'unknown') to npm!"
-          echo "📦 Package is now available at: https://www.npmjs.com/package/devlift" 
+          VERSION=$(cat VERSION || echo 'unknown')
+          echo "🎉 Successfully published devlift v${VERSION} to npm!"
+          echo "📦 Package is now available at: https://www.npmjs.com/package/devlift"
+          echo "🎁 GitHub release created: https://github.com/${{ github.repository }}/releases/tag/v${VERSION}" 
