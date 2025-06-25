@@ -104,19 +104,19 @@ For each feature, follow this cycle:
 
 ## Phase 5: The Execution Engine
 
-- [ ] **5.1. Write Tests for `ExecutionEngine`**
-    - [ ] Create `tests/core/execution-engine.test.js`.
-    - [ ] Mock `fs-extra`, `inquirer`, and `execa` using `jest.mock`.
-    - [ ] Write tests for the `run` method, which will orchestrate private helpers.
-    - [ ] Write a unit test for handling the environment setup. Provide a mock config and assert `fs-extra.copy` and `inquirer` are called correctly.
-    - [ ] Write unit tests for the step runner. For `package-manager` steps, assert `execa` is called with the right command. For `shell` steps, assert `inquirer` (for confirmation) and `execa` are called correctly.
-    - [ ] Write unit tests for post-setup actions, asserting `console.log` is called for messages and `execa` for opening an editor.
-- [ ] **5.2. Run Tests to Confirm Failure:** Run `npm test`.
-- [ ] **5.3. Implement `ExecutionEngine` Class**
-    - [ ] Create `src/core/execution-engine.js`.
-    - [ ] Implement the class and its methods to make the tests pass.
-- [ ] **5.4. Run Tests to Confirm Pass:** Run `npm test` until all engine tests pass.
-- [ ] **5.5. Commit and Update:** Commit the engine and check off tasks.
+- [x] **5.1. Write Tests for `ExecutionEngine`**
+    - [x] Create `tests/core/execution-engine.test.js`.
+    - [x] Mock `fs-extra`, `inquirer`, and `execa` using `jest.mock`.
+    - [x] Write tests for the `run` method, which will orchestrate private helpers.
+    - [x] Write a unit test for handling the environment setup. Provide a mock config and assert `fs-extra.copy` and `inquirer` are called correctly.
+    - [x] Write unit tests for the step runner. For `package-manager` steps, assert `execa` is called with the right command. For `shell` steps, assert `inquirer` (for confirmation) and `execa` are called correctly.
+    - [x] Write unit tests for post-setup actions, asserting `console.log` is called for messages and `execa` for opening an editor.
+- [x] **5.2. Run Tests to Confirm Failure:** Run `npm test`.
+- [x] **5.3. Implement `ExecutionEngine` Class**
+    - [x] Create `src/core/execution-engine.js`.
+    - [x] Implement the class and its methods to make the tests pass.
+- [x] **5.4. Run Tests to Confirm Pass:** Run `npm test` until all engine tests pass.
+- [x] **5.5. Commit and Update:** Commit the engine and check off tasks.
 
 ## Phase 6: `dev init` Command (Interactive Wizard)
 
