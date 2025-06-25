@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import liftCommand from './commands/lift.js';
 import prepCommand from './commands/prep.js';
+import pumpCommand from './commands/pump.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,5 +16,6 @@ program
 
 program.addCommand(liftCommand);
 program.addCommand(prepCommand);
+program.addCommand(pumpCommand);
 
 program.parse(process.argv);
