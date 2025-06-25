@@ -59,4 +59,44 @@ describe('Configuration Validator', () => {
         };
         expect(() => validateConfig(config)).toThrow('Missing required field: version');
     });
+
+    it('should handle config with legacy "setup" field instead of "setup_steps"', () => {
+        const config = {
+            version: '1',
+            setup: [
+                {
+                    name: 'Install dependencies',
+                    type: 'shell',
+                    command: 'npm install'
+                }
+            ]
+        };
+
+        expect(() => validateConfig(config as any)).not.toThrow();
+    });
+
+    it('should validate steps in legacy "setup" field', () => {
+        const config = {
+            version: '1',
+            setup: [
+                {
+                    name: 'Install deps',
+                    type: 'invalid-type',
+                    command: 'npm install'
+                }
+            ]
+        };
+
+        expect(() => validateConfig(config as any))
+            .toThrow('Invalid step type: invalid-type');
+    });
+
+    it('should pass validation when config has no setup steps at all', () => {
+        const config = {
+            version: '1'
+            // No setup or setup_steps field
+        };
+
+        expect(() => validateConfig(config as any)).not.toThrow();
+    });
 }); 

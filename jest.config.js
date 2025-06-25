@@ -21,15 +21,20 @@ export default {
     // The directory where Jest should output its coverage files
     coverageDirectory: 'coverage',
 
-    // Transform configuration for ES modules and TypeScript
-    transform: {
-        '^.+\\.tsx?$': ['ts-jest', {
+    // Global configuration for ts-jest
+    globals: {
+        'ts-jest': {
             useESM: true
-        }]
+        }
     },
 
     // Module name mapping for ES module imports
     moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1'
-    }
+    },
+
+    // Transform ignore patterns to handle ESM modules in node_modules
+    transformIgnorePatterns: [
+        'node_modules/(?!(chalk|execa|inquirer)/)'
+    ]
 }; 

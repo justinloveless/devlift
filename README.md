@@ -56,4 +56,33 @@ setup:
     command: npm run db:migrate
 ```
 
-Currently, the only supported step `type` is `shell`. More step types will be added in future versions. 
+Currently, the only supported step `type` is `shell`. More step types will be added in future versions.
+
+## Development & Publishing
+
+### Version Management
+
+This project uses a `VERSION` file as the single source of truth for version numbers. The version is automatically synced to `package.json` during the publishing process.
+
+#### Available Scripts
+
+- **Check current version**: `npm run version:current`
+- **Bump version**: `npm run version:bump <major|minor|patch>`
+  - `npm run version:bump patch` - 1.0.1 → 1.0.2
+  - `npm run version:bump minor` - 1.0.1 → 1.1.0
+  - `npm run version:bump major` - 1.0.1 → 2.0.0
+- **Sync version**: `npm run version:sync` (syncs VERSION file to package.json)
+- **Safe publish**: `npm run publish:safe` (builds, tests, and publishes)
+
+#### Publishing Workflow
+
+1. **Bump the version**: `npm run version:bump patch`
+2. **Publish safely**: `npm run publish:safe`
+
+The safe publish script will:
+- Sync the VERSION file to package.json
+- Build the TypeScript code
+- Run all tests
+- Publish to npm
+
+This ensures that every published version is properly tested and built from the correct version number. 
