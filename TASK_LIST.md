@@ -9,37 +9,48 @@ For each feature, follow this cycle:
 3.  **Write the minimum amount of code** required to make the new test pass.
 4.  **Run the test suite again** to confirm all tests now pass.
 5.  **Refactor** the code if necessary, ensuring tests continue to pass.
-6.  **Commit** the work to Git once a feature is complete and fully tested.
-7.  **Update this document** by checking off the completed tasks.
+6.  **Update this document** by checking off the completed tasks.
+7.  **Commit** the work to Git once a feature is complete and fully tested.
 
 ---
 
 ## Phase 0: TDD and Testing Setup
 
-- [ ] **0.1. Install Testing Dependencies**
-    - [ ] Run `npm install --save-dev jest`.
-- [ ] **0.2. Configure Testing Environment**
-    - [ ] In `package.json`, add the `test` script: `"test": "jest"`.
-    - [ ] Create a `jest.config.js` file in the project root.
-    - [ ] Create a top-level `tests` directory. The structure inside `tests` should mirror the `src` directory (e.g., tests for `src/core/parser.js` will be in `tests/core/parser.test.js`).
+- [x] **0.1. Install Testing Dependencies**
+    - [x] Run `npm install --save-dev jest`.
+- [x] **0.2. Configure Testing Environment**
+    - [x] Add `"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"` to `package.json` scripts.
+    - [x] Create `jest.config.js` in the root.
+    - [x] Create the `tests` directory.
+- [x] **0.3. Configure Babel for Jest**
+    - [x] Run `npm install --save-dev @babel/preset-env`.
+    - [x] Create `babel.config.cjs` with ES module support.
+- [x] **0.4. Create `.gitignore**
+    - [x] Create a `.gitignore` file in the root to exclude `node_modules` and other artifacts.
+- [x] **0.5. Initial Git Commit**
+    - [x] Commit all the initial setup files.
 
 ## Phase 1: Project Setup & Core Infrastructure
 
-- [ ] **1.1. Restructure Project Directory**
-    - [ ] Create a `src` directory.
-    - [ ] Inside `src`, create subdirectories: `commands`, `core`, `utils`.
-    - [ ] Move `index.js` into `src/index.js`.
-    - [ ] Update `package.json`'s `main` and `bin` properties to point to `src/index.js`.
-- [ ] **1.2. Install Core Dependencies**
-    - [ ] Run `npm install commander chalk inquirer js-yaml simple-git execa fs-extra`.
-- [ ] **1.3. Implement Base CLI Framework**
-    - [ ] **1.3.1. Write Initial CLI Test:** In a new file `tests/index.test.js`, write a simple test that programmatically executes the CLI with a `--version` flag and asserts that the output matches the version in `package.json`.
-    - [ ] **1.3.2. Run Test to Confirm Failure:** Run `npm test`. The test should fail because no implementation exists.
-    - [ ] **1.3.3. Implement Base Framework:** In `src/index.js`, configure `commander` with the program's name, description, and version. Create stub files `src/commands/install.js` and `src/commands/init.js` and register them with the main program in `src/index.js`.
-    - [ ] **1.3.4. Run Tests to Confirm Pass:** Run `npm test` until the version test passes.
-- [ ] **1.4. Commit and Update**
-    - [ ] Commit the initial project structure and dependencies to Git.
-    - [ ] Check off all completed tasks in this phase.
+- [x] **1.1. Restructure Project Directory**
+    - [x] Create a `src` directory to house all source code.
+    - [x] Inside `src`, create the following subdirectories: `commands`, `core`, `utils`.
+    - [x] Move the existing `index.js` file to `src/index.js`.
+    - [x] Update the `package.json` `main` and `bin` entries to point to `src/index.js`.
+- [x] **1.2. Install Core Dependencies**
+    - [x] Run `npm install commander chalk inquirer js-yaml simple-git execa fs-extra`.
+- [x] **1.3. Implement Base CLI Framework (TDD)**
+    - [x] **Test:** Create `tests/index.test.js`. Add a test to run `dev --version` and check if it matches `package.json`.
+    - [x] **Run & Fail:** Run `npm test` and confirm it fails as expected.
+    - [x] **Implement:**
+        - [x] Add `"type": "module"` to `package.json`.
+        - [x] Create `src/commands/install.js`.
+        - [x] Create `src/commands/init.js`.
+        - [x] Refactor `src/index.js` to import and use the new command modules.
+    - [x] **Run & Pass:** Run `npm test` and confirm all tests pass.
+- [x] **1.4. Commit and Update:**
+    - [x] Commit the base CLI framework.
+    - [x] Check off all completed tasks in this list.
 
 ## Phase 2: Configuration (`dev.yml`) Handling
 
