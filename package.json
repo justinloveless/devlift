@@ -1,0 +1,28 @@
+{
+  "name": "dev-cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": "src/index.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "execa": "^9.6.0",
+    "fs-extra": "^11.3.0",
+    "inquirer": "^12.6.3",
+    "js-yaml": "^4.1.0",
+    "simple-git": "^3.28.0"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.27.2",
+    "@types/node": "^24.0.4",
+    "jest": "^30.0.3"
+  }
+}
