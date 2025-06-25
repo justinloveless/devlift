@@ -1,11 +1,11 @@
-# Dev-CLI
+# Devlift
 
-`dev-cli` is a universal command-line tool designed to automate and standardize the process of setting up any repository for local development.
+`devlift` is a universal command-line tool designed to automate and standardize the process of setting up any repository for local development. It's like a "dead lift" for your dev environment - one command to get everything up and running.
 
 With a single command, you can clone a repository and have it ready to go, complete with all dependencies installed, environment variables set up, and initialization scripts run.
 
 ## The Problem
-Setting up a new project locally is often a manual, time-consuming, and error-prone process. `dev-cli` solves this by using a simple `dev.yml` configuration file to define the entire setup process, making project onboarding seamless and consistent.
+Setting up a new project locally is often a manual, time-consuming, and error-prone process. `devlift` solves this by using a simple `dev.yml` configuration file to define the entire setup process, making project onboarding seamless and consistent.
 
 ## Installation
 
@@ -18,24 +18,24 @@ This will make the `dev` command available globally in your terminal.
 
 ## Core Commands
 
-### `dev install <repository_url>`
-This is the primary command. It clones the specified repository and then automatically executes the setup steps defined in its `dev.yml` file.
+### `dev lift <repository_url>`
+This is the primary command. It "lifts" the specified repository into your local environment, cloning it and then automatically executing the setup steps defined in its `dev.yml` file.
 
 **Usage:**
 ```bash
-dev install https://github.com/some-org/some-repo.git
+dev lift https://github.com/some-org/some-repo.git
 ```
-The tool will clone the repository into a standardized path (`~/dev-cli/clones/`) and then the Execution Engine will take over to complete the setup.
+The tool will clone the repository into a standardized path (`~/devlift/clones/`) and then the Execution Engine will take over to complete the setup.
 
-If the target repository does not contain a `dev.yml` file, you will be prompted to create one.
+If the target repository does not contain a `dev.yml` file, you will be prompted to `prep` one.
 
-### `dev init`
-This command launches an interactive wizard that helps you create a `dev.yml` file for your own project. It will guide you through defining the setup steps, such as running shell commands.
+### `dev prep`
+This command launches an interactive wizard to help you `prep` a `dev.yml` file for your own project, getting it ready for a `lift`. It will guide you through defining the setup steps, such as running shell commands.
 
 **Usage:**
 ```bash
 cd /path/to/your/project
-dev init
+dev prep
 ```
 This will generate a `dev.yml` file in your current directory.
 

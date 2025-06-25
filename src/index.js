@@ -2,8 +2,8 @@ import { program } from "commander"; // or const { program } = require('commande
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import installCommand from './commands/install.js';
-import initCommand from './commands/init.js';
+import liftCommand from './commands/lift.js';
+import prepCommand from './commands/prep.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +13,7 @@ program
     .version(pkg.version)
     .description(pkg.description);
 
-program.addCommand(installCommand);
-program.addCommand(initCommand);
+program.addCommand(liftCommand);
+program.addCommand(prepCommand);
 
 program.parse(process.argv);

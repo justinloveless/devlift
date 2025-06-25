@@ -28,7 +28,7 @@ jest.unstable_mockModule('../../src/core/execution-engine.js', () => ({
     ExecutionEngine: executionEngineMock,
 }));
 
-describe('Install Command', () => {
+describe('Lift Command', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
@@ -37,7 +37,7 @@ describe('Install Command', () => {
         const { default: simpleGit } = await import('simple-git');
         const { loadConfig, validateConfig } = await import('../../src/core/config.js');
         const { ExecutionEngine } = await import('../../src/core/execution-engine.js');
-        const { default: installCommand } = await import('../../src/commands/install.js');
+        const { default: liftCommand } = await import('../../src/commands/lift.js');
 
         // Setup mocks
         const mockConfig = { version: '1', setup: [] };
@@ -45,7 +45,7 @@ describe('Install Command', () => {
 
         // Execute the command
         const repoUrl = 'https://github.com/test/repo.git';
-        await installCommand.parseAsync(['node', 'test', repoUrl]);
+        await liftCommand.parseAsync(['node', 'test', repoUrl]);
 
         // Assertions
         expect(cloneMock).toHaveBeenCalledWith(repoUrl, expect.any(String));
@@ -58,14 +58,14 @@ describe('Install Command', () => {
     it('should prompt the user if no config is found', async () => {
         const { default: inquirer } = await import('inquirer');
         const { loadConfig } = await import('../../src/core/config.js');
-        const { default: installCommand } = await import('../../src/commands/install.js');
+        const { default: liftCommand } = await import('../../src/commands/lift.js');
 
         // Setup mocks
         loadConfig.mockReturnValue(null);
 
         // Execute the command
         const repoUrl = 'https://github.com/test/repo.git';
-        await installCommand.parseAsync(['node', 'test', repoUrl]);
+        await liftCommand.parseAsync(['node', 'test', repoUrl]);
 
         // Assertions
         expect(loadConfig).toHaveBeenCalled();
@@ -73,11 +73,11 @@ describe('Install Command', () => {
     });
 
     it('should exit if an invalid git URL is provided', async () => {
-        const { default: installCommand } = await import('../../src/commands/install.js');
+        const { default: liftCommand } = await import('../../src/commands/lift.js');
         const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => { });
         const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => { });
 
-        await installCommand.parseAsync(['node', 'test', 'invalid-url']);
+        await liftCommand.parseAsync(['node', 'test', 'invalid-url']);
 
         expect(mockExit).toHaveBeenCalledWith(1);
         mockExit.mockRestore();
@@ -87,12 +87,12 @@ describe('Install Command', () => {
     it('should abort if user declines to create a new config', async () => {
         const { default: inquirer } = await import('inquirer');
         const { loadConfig } = await import('../../src/core/config.js');
-        const { default: installCommand } = await import('../../src/commands/install.js');
+        const { default: liftCommand } = await import('../../src/commands/lift.js');
 
         loadConfig.mockReturnValue(null);
         inquirer.prompt.mockResolvedValue({ proceed: false });
 
-        await installCommand.parseAsync(['node', 'test', 'https://github.com/test/repo.git']);
+        await liftCommand.parseAsync(['node', 'test', 'https://github.com/test/repo.git']);
 
         expect(inquirer.prompt).toHaveBeenCalled();
     });

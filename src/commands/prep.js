@@ -4,8 +4,8 @@ import fs from 'fs-extra';
 import yaml from 'js-yaml';
 import chalk from 'chalk';
 
-const init = new Command('init')
-    .description('Create a new dev.yml configuration file in the current directory')
+const prep = new Command('prep')
+    .description('Prepare a new dev.yml configuration file for the current project')
     .action(async () => {
         if (fs.pathExistsSync('dev.yml')) {
             const { overwrite } = await inquirer.prompt([
@@ -59,4 +59,4 @@ const init = new Command('init')
         console.log(chalk.green('✅ dev.yml created successfully!'));
     });
 
-export default init; 
+export default prep; 

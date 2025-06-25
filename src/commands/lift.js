@@ -7,9 +7,9 @@ import { ExecutionEngine } from '../core/execution-engine.js';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 
-const install = new Command('install')
-    .description('Install and set up a repository from a URL')
-    .argument('<repo_url>', 'The URL of the repository to install')
+const lift = new Command('lift')
+    .description('Lift a repository into a local development environment')
+    .argument('<repo_url>', 'The URL of the repository to lift')
     .option('-y, --yes', 'Skip all interactive prompts')
     .action(async (repoUrl, options) => {
         // 1. Validate URL
@@ -60,4 +60,4 @@ const install = new Command('install')
         }
     });
 
-export default install; 
+export default lift; 

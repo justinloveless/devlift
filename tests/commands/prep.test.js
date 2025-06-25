@@ -14,11 +14,11 @@ jest.unstable_mockModule('fs-extra', () => ({
     },
 }));
 
-describe('Init Command', () => {
+describe('Prep Command', () => {
     it('should generate a correct dev.yml from user input', async () => {
         const { default: inquirer } = await import('inquirer');
         const { default: fs } = await import('fs-extra');
-        const { default: initCommand } = await import('../../src/commands/init.js');
+        const { default: prepCommand } = await import('../../src/commands/prep.js');
 
         // Simulate user input
         inquirer.prompt
@@ -31,7 +31,7 @@ describe('Init Command', () => {
             .mockResolvedValueOnce({ addMore: false });
 
         // Run the command
-        await initCommand.parseAsync(['node', 'test']);
+        await prepCommand.parseAsync(['node', 'test']);
 
         // Expected YAML output
         const expectedConfig = {
@@ -53,12 +53,12 @@ describe('Init Command', () => {
     it('should abort if user chooses not to overwrite existing file', async () => {
         const { default: inquirer } = await import('inquirer');
         const { default: fs } = await import('fs-extra');
-        const { default: initCommand } = await import('../../src/commands/init.js');
+        const { default: prepCommand } = await import('../../src/commands/prep.js');
 
         fs.pathExistsSync.mockReturnValue(true);
         inquirer.prompt.mockResolvedValue({ overwrite: false });
 
-        await initCommand.parseAsync(['node', 'test']);
+        await prepCommand.parseAsync(['node', 'test']);
 
         expect(fs.writeFileSync).not.toHaveBeenCalled();
     });
@@ -66,12 +66,12 @@ describe('Init Command', () => {
     it('should create a config with no steps if user adds none', async () => {
         const { default: inquirer } = await import('inquirer');
         const { default: fs } = await import('fs-extra');
-        const { default: initCommand } = await import('../../src/commands/init.js');
+        const { default: prepCommand } = await import('../../src/commands/prep.js');
 
         fs.pathExistsSync.mockReturnValue(false);
         inquirer.prompt.mockResolvedValue({ addStep: false });
 
-        await initCommand.parseAsync(['node', 'test']);
+        await prepCommand.parseAsync(['node', 'test']);
 
         const expectedConfig = { version: '1', setup: [] };
         const expectedYaml = yaml.dump(expectedConfig);
