@@ -172,4 +172,153 @@ For each feature, follow this cycle:
     - [ ] **Task:** Document a strategy for ensuring compatibility on macOS, Linux, and Windows (WSL). This may involve manual testing checklists or setting up a GitHub Actions matrix for automated testing on different OS runners.
 - [ ] **8.3. Investigate Caching Strategy for Dependencies**
     - [ ] **Task:** This is a research task. Investigate methods for caching dependencies (e.g., npm packages) across multiple project installations to improve performance. The findings should be documented for a potential V2 implementation.
-- [ ] **8.4. Commit and Update:** Commit the final V1 features and documentation. 
+- [ ] **8.4. Commit and Update:** Commit the final V1 features and documentation.
+
+## Phase 9: AI-Powered Smart Prep Enhancement
+
+### Overview
+This phase enhances the existing `dev prep` command with AI-powered analysis capabilities while maintaining backward compatibility with the existing interactive wizard approach.
+
+- [ ] **9.1. Install AI and HTTP Dependencies**
+    - [ ] Run `npm install openai @anthropic-ai/sdk @google/generative-ai node-fetch axios`
+    - [ ] Add type definitions: `npm install --save-dev @types/node-fetch`
+
+- [ ] **9.2. Implement AI Provider Infrastructure (TDD)**
+    - [ ] **Test:** Create `tests/core/ai-providers.test.js`
+        - [ ] Write tests for abstract AI provider interface
+        - [ ] Write tests for OpenAI provider implementation
+        - [ ] Write tests for Anthropic provider implementation  
+        - [ ] Write tests for provider factory and selection logic
+        - [ ] Test error handling for invalid API keys and network failures
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Create `src/core/ai-providers.js`
+        - [ ] Create abstract `AIProvider` base class
+        - [ ] Implement `OpenAIProvider` class
+        - [ ] Implement `AnthropicProvider` class
+        - [ ] Implement `GoogleProvider` class
+        - [ ] Create `AIProviderFactory` for provider instantiation
+    - [ ] **Run & Pass:** Ensure all AI provider tests pass
+
+- [ ] **9.3. Implement Project Content Analyzer (TDD)**
+    - [ ] **Test:** Create `tests/core/project-analyzer.test.js`
+        - [ ] Test file discovery and filtering logic
+        - [ ] Test content extraction from various file types
+        - [ ] Test technology detection (Node.js, Python, Docker, etc.)
+        - [ ] Test environment variable extraction from .env files
+        - [ ] Test script extraction from package.json, Makefile, etc.
+        - [ ] Test documentation parsing for setup instructions
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Create `src/core/project-analyzer.js`
+        - [ ] Implement `ProjectAnalyzer` class with methods:
+            - [ ] `analyzeProject(directory)` - main analysis entry point
+            - [ ] `discoverFiles(directory)` - find relevant project files
+            - [ ] `extractContent(files)` - extract content from files
+            - [ ] `detectTechnologies(content)` - identify project technologies
+            - [ ] `extractEnvironmentVariables(content)` - find env vars
+            - [ ] `extractCommands(content)` - find setup/run commands
+    - [ ] **Run & Pass:** Ensure analyzer tests pass
+
+- [ ] **9.4. Implement AI Configuration Generator (TDD)**
+    - [ ] **Test:** Create `tests/core/ai-config-generator.test.js`
+        - [ ] Test prompt generation for different project types
+        - [ ] Test AI response parsing and validation
+        - [ ] Test configuration generation with proper YAML formatting
+        - [ ] Test error handling for malformed AI responses
+        - [ ] Test fallback behavior when AI analysis fails
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Create `src/core/ai-config-generator.js`
+        - [ ] Implement `AIConfigGenerator` class with methods:
+            - [ ] `generateConfig(projectData, aiProvider)` - main generation
+            - [ ] `buildPrompt(projectData)` - create AI prompt
+            - [ ] `parseAIResponse(response)` - parse and validate AI output
+            - [ ] `validateGeneratedConfig(config)` - ensure valid dev.yml
+    - [ ] **Run & Pass:** Ensure generator tests pass
+
+- [ ] **9.5. Implement API Key Management (TDD)**
+    - [ ] **Test:** Create `tests/core/api-key-manager.test.js`
+        - [ ] Test API key loading from environment variables
+        - [ ] Test API key loading from global config file
+        - [ ] Test secure storage and retrieval
+        - [ ] Test API key validation for different providers
+        - [ ] Test prompt for missing API keys
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Create `src/core/api-key-manager.js`
+        - [ ] Implement `APIKeyManager` class with methods:
+            - [ ] `getAPIKey(provider)` - retrieve API key for provider
+            - [ ] `setAPIKey(provider, key)` - store API key securely  
+            - [ ] `promptForAPIKey(provider)` - interactive key input
+            - [ ] `validateAPIKey(provider, key)` - validate key format
+    - [ ] **Run & Pass:** Ensure API key management tests pass
+
+- [ ] **9.6. Update prep Command with AI Integration (TDD)**
+    - [ ] **Test:** Update `tests/commands/prep.test.js`
+        - [ ] Add tests for `--ai` flag functionality
+        - [ ] Test AI provider selection with `--ai-provider` flag
+        - [ ] Test `--interactive` flag to force traditional mode
+        - [ ] Test `--review` flag for config review before saving
+        - [ ] Test `--explain` flag for AI explanations in output
+        - [ ] Test graceful fallback from AI to interactive mode
+        - [ ] Test that existing interactive functionality remains unchanged
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Update `src/commands/prep.ts` (note: may need to be renamed from .js)
+        - [ ] Add new command line options for AI functionality
+        - [ ] Integrate `ProjectAnalyzer` for project analysis
+        - [ ] Integrate `AIConfigGenerator` for AI-powered generation
+        - [ ] Implement review and approval workflow
+        - [ ] Maintain backward compatibility with existing interactive mode
+        - [ ] Add proper error handling and fallback mechanisms
+    - [ ] **Run & Pass:** Ensure all prep command tests pass
+
+- [ ] **9.7. Implement Global Configuration for AI Settings (TDD)**
+    - [ ] **Test:** Update `tests/core/config.test.js` or create new test file
+        - [ ] Test global config file creation and loading
+        - [ ] Test default AI provider setting storage/retrieval
+        - [ ] Test global API key storage (if enabled by user)
+        - [ ] Test config file validation and migration
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Update existing global config module
+        - [ ] Add AI provider preferences to global config schema
+        - [ ] Add methods for AI-specific configuration management
+        - [ ] Ensure secure handling of any stored credentials
+    - [ ] **Run & Pass:** Ensure global config tests pass
+
+- [ ] **9.8. Add Comprehensive Integration Tests**
+    - [ ] **Test:** Create `tests/integration/ai-prep.test.js`
+        - [ ] Test complete AI-powered prep workflow end-to-end
+        - [ ] Test with mocked AI providers and various project types
+        - [ ] Test error scenarios and fallback behaviors
+        - [ ] Test configuration validation of AI-generated dev.yml files
+    - [ ] **Run & Fail:** Run tests to confirm failure  
+    - [ ] **Fix:** Resolve any integration issues discovered
+    - [ ] **Run & Pass:** Ensure all integration tests pass
+
+- [ ] **9.9. Update Documentation and Help**
+    - [ ] Update `src/commands/prep.ts` help text to include AI options
+    - [ ] Create documentation for AI provider setup and API key configuration
+    - [ ] Add examples of AI-generated dev.yml files to documentation
+    - [ ] Update CLI help output to explain new AI functionality
+
+- [ ] **9.10. Security and Privacy Review**
+    - [ ] Review AI provider integrations for secure API key handling
+    - [ ] Ensure no project data is logged when using AI providers
+    - [ ] Validate that API keys are never included in error messages or logs
+    - [ ] Test data sanitization before sending to AI providers
+    - [ ] Document privacy considerations for users
+
+- [ ] **9.11. Performance Testing and Optimization**
+    - [ ] Test AI analysis performance with various project sizes
+    - [ ] Implement caching for repeated AI requests where appropriate
+    - [ ] Add progress indicators for long-running AI analysis
+    - [ ] Test and optimize network timeout handling
+
+- [ ] **9.12. Commit and Update**
+    - [ ] Commit all AI-powered prep functionality
+    - [ ] Update version number to reflect major feature addition
+    - [ ] Create detailed commit messages explaining the new functionality
+    - [ ] Check off all completed tasks in this phase
+
+### Notes for Phase 9:
+- **Backward Compatibility:** The existing `dev prep` command must continue to work exactly as before when no AI flags are used
+- **Graceful Degradation:** If AI analysis fails for any reason, the tool should fall back to the interactive wizard
+- **Security First:** API keys must be handled securely, and project data should not be stored by AI providers
+- **User Control:** Users should have full control over when and how AI is used, with clear opt-in behavior 

@@ -106,7 +106,7 @@ This is the primary command for the end-user developer.
 6.  **Security Prompt:** Before executing any `shell` command, the tool will display the command and require explicit user confirmation. This can be bypassed with a `--yes` flag for trusted scripts or CI environments.
 7.  **Post-Setup:** Executes post-setup actions, such as displaying a success message or opening the project in the user's preferred editor.
 
-### 4.3. `dev prep` Command
+### 4.3. `dev prep` Command (Interactive Wizard)
 This is the interactive wizard for repository maintainers to create the `dev.yml` file.
 
 **Workflow:**
@@ -118,17 +118,63 @@ This is the interactive wizard for repository maintainers to create the `dev.yml
     *   "I see a `.env.example` file. Should I configure the environment setup from it?"
 3.  **File Generation:** Creates a well-formatted and commented `dev.yml` file at the end of the process.
 
+### 4.4. `dev prep` Command (AI-Powered Smart Analysis)
+An enhanced version of the prep command that leverages AI to intelligently analyze project contents and generate comprehensive dev.yml configurations.
+
+**Key Features:**
+*   **Deep Project Analysis:** AI analyzes multiple project files including:
+    *   Configuration files (`package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, etc.)
+    *   Docker files (`Dockerfile`, `docker-compose.yml`, `docker-compose.yaml`)
+    *   Environment files (`.env.example`, `.env.template`, etc.)
+    *   CI/CD configurations (`.github/workflows/*`, `.gitlab-ci.yml`, etc.)
+    *   Documentation (`README.md`, `CONTRIBUTING.md`, setup guides)
+    *   Build configurations (`Makefile`, `webpack.config.js`, etc.)
+    *   Database migrations and schemas
+*   **Intelligent Configuration Generation:** AI creates a complete dev.yml file with:
+    *   Appropriate setup steps based on detected technologies
+    *   Proper dependency ordering and `depends_on` relationships
+    *   Environment variable extraction from documentation and examples
+    *   Database setup commands based on detected ORMs/migrations
+    *   Build and test commands from scripts and CI configurations
+    *   Appropriate post-setup instructions
+
+**Workflow:**
+1.  **Multi-Provider AI Support:** Support for multiple AI providers (OpenAI, Anthropic, Google, local models)
+2.  **API Key Management:** Secure handling of user-provided API keys with options for:
+    *   Environment variable configuration
+    *   Global config file storage
+    *   Per-project API key settings
+3.  **Smart Analysis Pipeline:**
+    *   File discovery and content extraction
+    *   Context-aware analysis using AI
+    *   Configuration generation with explanations
+    *   User review and approval process
+4.  **Fallback Options:** If AI analysis fails or no API key is provided, gracefully fall back to the traditional interactive wizard
+
+**Command Options:**
+*   `dev prep --ai` - Use AI-powered analysis
+*   `dev prep --ai-provider <provider>` - Specify AI provider (openai, anthropic, google, local)
+*   `dev prep --interactive` - Force traditional interactive mode
+*   `dev prep --review` - Show AI-generated config for review before saving
+*   `dev prep --explain` - Include AI explanations as comments in the generated file
+
 ## 5. Non-Functional Requirements
 
-*   **Security:** User trust is paramount. All actions, especially shell command execution, must be transparent and require user consent by default. Secret handling must be secure (e.g., masking input).
-*   **Performance:** The tool should be fast and responsive. Where possible, it should leverage caching (e.g., for dependencies) to speed up repeated installations.
-*   **Usability:** The CLI must be intuitive, with clear commands, flags, and helpful error messages. The output should be clean and easy to read.
+*   **Security:** User trust is paramount. All actions, especially shell command execution, must be transparent and require user consent by default. Secret handling must be secure (e.g., masking input). AI API keys must be stored securely and never logged.
+*   **Performance:** The tool should be fast and responsive. Where possible, it should leverage caching (e.g., for dependencies) to speed up repeated installations. AI analysis should be optimized for speed while maintaining accuracy.
+*   **Usability:** The CLI must be intuitive, with clear commands, flags, and helpful error messages. The output should be clean and easy to read. AI-generated configurations should be human-readable and well-commented.
 *   **Compatibility:** The tool must be cross-platform, with first-class support for macOS, Linux, and Windows (via WSL). It should handle OS-specific differences in shell commands gracefully.
-*   **Extensibility:** The architecture should allow for future expansion, such as a plugin system to support more complex or niche technologies.
+*   **Extensibility:** The architecture should allow for future expansion, such as a plugin system to support more complex or niche technologies, and easy addition of new AI providers.
+*   **Privacy:** AI analysis should respect user privacy. No project data should be stored or used for training by AI providers beyond the immediate request.
 
 ## 6. Future Scope (V2 and Beyond)
 
 *   **`dev update` Command:** A command to pull the latest changes from the repository's main branch and intelligently re-run the necessary setup steps.
 *   **`dev teardown` Command:** A command to clean up the local environment, such as stopping Docker containers, removing `.env` files, and deleting build artifacts.
 *   **Plugin Ecosystem:** Allow third-party plugins to add support for new package managers, cloud provider integrations (e.g., AWS CLI configuration), or specific framework setups.
-*   **Centralized Config Repository:** An optional, community-driven repository of `dev.yml` files for popular open-source projects that don't have one, allowing users to do `dev lift <repo_url> --with-config <config_name>`. 
+*   **Centralized Config Repository:** An optional, community-driven repository of `dev.yml` files for popular open-source projects that don't have one, allowing users to do `dev lift <repo_url> --with-config <config_name>`.
+*   **AI Learning & Improvement:** Collect anonymized feedback on AI-generated configurations to improve accuracy over time.
+*   **Local AI Models:** Support for running AI analysis entirely locally using models like CodeLlama or similar, for enhanced privacy and offline usage.
+*   **Multi-Language Documentation Analysis:** AI-powered analysis of documentation in multiple languages to extract setup instructions.
+*   **Smart Update Detection:** AI-powered analysis to detect when project dependencies or setup requirements have changed and suggest dev.yml updates.
+*   **Configuration Templates:** AI-generated configuration templates for common project types that can be customized and reused. 
