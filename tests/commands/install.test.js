@@ -71,4 +71,29 @@ describe('Install Command', () => {
         expect(loadConfig).toHaveBeenCalled();
         expect(inquirer.prompt).toHaveBeenCalled();
     });
+
+    it('should exit if an invalid git URL is provided', async () => {
+        const { default: installCommand } = await import('../../src/commands/install.js');
+        const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => { });
+        const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+        await installCommand.parseAsync(['node', 'test', 'invalid-url']);
+
+        expect(mockExit).toHaveBeenCalledWith(1);
+        mockExit.mockRestore();
+        mockConsoleError.mockRestore();
+    });
+
+    it('should abort if user declines to create a new config', async () => {
+        const { default: inquirer } = await import('inquirer');
+        const { loadConfig } = await import('../../src/core/config.js');
+        const { default: installCommand } = await import('../../src/commands/install.js');
+
+        loadConfig.mockReturnValue(null);
+        inquirer.prompt.mockResolvedValue({ proceed: false });
+
+        await installCommand.parseAsync(['node', 'test', 'https://github.com/test/repo.git']);
+
+        expect(inquirer.prompt).toHaveBeenCalled();
+    });
 }); 

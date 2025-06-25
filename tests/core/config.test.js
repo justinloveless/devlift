@@ -59,4 +59,19 @@ describe('Configuration Validator', () => {
         };
         expect(() => validateConfig(config)).toThrow('Invalid step type: invalid-type');
     });
+
+    it('should throw an error for an unknown step type', () => {
+        const config = {
+            version: '1',
+            setup: [
+                { type: 'unknown', command: 'foo' }
+            ]
+        };
+        expect(() => validateConfig(config)).toThrow('Invalid step type: unknown');
+    });
+
+    it('should not throw for a valid config with no setup steps', () => {
+        const config = { version: '1' };
+        expect(() => validateConfig(config)).not.toThrow();
+    });
 }); 

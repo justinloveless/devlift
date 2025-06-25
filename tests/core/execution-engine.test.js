@@ -38,4 +38,30 @@ describe('ExecutionEngine', () => {
         expect(inquirer.prompt).toHaveBeenCalled();
         expect(execa).toHaveBeenCalledWith('npm install', { cwd: '/test/dir', stdio: 'inherit', shell: true });
     });
+
+    it('should do nothing if no setup steps are provided', async () => {
+        const { ExecutionEngine } = await import('../../src/core/execution-engine.js');
+        const { execa } = await import('execa');
+        const config = { version: '1' }; // No setup property
+        const engine = new ExecutionEngine(config, '/test/dir');
+
+        await engine.run();
+
+        expect(execa).not.toHaveBeenCalled();
+    });
+
+    it('should skip a shell step if the user declines', async () => {
+        const { ExecutionEngine } = await import('../../src/core/execution-engine.js');
+        const { default: inquirer } = await import('inquirer');
+        const { execa } = await import('execa');
+
+        inquirer.prompt.mockResolvedValue({ proceed: false });
+        const config = { setup: [{ type: 'shell', command: 'npm test' }] };
+        const engine = new ExecutionEngine(config, '/test/dir');
+
+        await engine.run();
+
+        expect(inquirer.prompt).toHaveBeenCalled();
+        expect(execa).not.toHaveBeenCalled();
+    });
 }); 

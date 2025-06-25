@@ -49,4 +49,33 @@ describe('Init Command', () => {
         // Assert
         expect(fs.writeFileSync).toHaveBeenCalledWith('dev.yml', expectedYaml);
     });
+
+    it('should abort if user chooses not to overwrite existing file', async () => {
+        const { default: inquirer } = await import('inquirer');
+        const { default: fs } = await import('fs-extra');
+        const { default: initCommand } = await import('../../src/commands/init.js');
+
+        fs.pathExistsSync.mockReturnValue(true);
+        inquirer.prompt.mockResolvedValue({ overwrite: false });
+
+        await initCommand.parseAsync(['node', 'test']);
+
+        expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('should create a config with no steps if user adds none', async () => {
+        const { default: inquirer } = await import('inquirer');
+        const { default: fs } = await import('fs-extra');
+        const { default: initCommand } = await import('../../src/commands/init.js');
+
+        fs.pathExistsSync.mockReturnValue(false);
+        inquirer.prompt.mockResolvedValue({ addStep: false });
+
+        await initCommand.parseAsync(['node', 'test']);
+
+        const expectedConfig = { version: '1', setup: [] };
+        const expectedYaml = yaml.dump(expectedConfig);
+
+        expect(fs.writeFileSync).toHaveBeenCalledWith('dev.yml', expectedYaml);
+    });
 }); 
