@@ -23,11 +23,14 @@ export class ExecutionEngine {
     }
 
     async run(): Promise<void> {
-        if (!this.config.setup_steps) {
+        // Handle both 'setup' and 'setup_steps' for backward compatibility
+        const steps = (this.config as any).setup || this.config.setup_steps;
+
+        if (!steps) {
             return;
         }
 
-        const sortedSteps = this.#topologicalSort(this.config.setup_steps);
+        const sortedSteps = this.#topologicalSort(steps);
 
         for (const step of sortedSteps) {
             if (step.type === 'shell') {
