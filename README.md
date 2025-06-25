@@ -9,12 +9,13 @@ Setting up a new project locally is often a manual, time-consuming, and error-pr
 
 ## Installation
 
-To install and use the development version of this tool locally, clone this repository and run:
+Install `devlift` globally via npm:
 
 ```bash
-npm install -g .
+npm install -g devlift
 ```
-This will make the `dev` command available globally in your terminal.
+
+This will make the `dev` command available in your terminal, allowing you to `lift` any repository that has a `dev.yml` file.
 
 ## Core Commands
 
