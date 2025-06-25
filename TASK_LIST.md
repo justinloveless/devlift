@@ -88,19 +88,19 @@ For each feature, follow this cycle:
 
 ## Phase 4: `dev install` Command (Core Logic)
 
-- [ ] **4.1. Write Integration Tests for `install` command**
-    - [ ] In a new file `tests/commands/install.test.js`, use `jest.mock` to mock `simple-git`, `inquirer`, and your `ExecutionEngine` (which doesn't exist yet but will be mocked).
-    - [ ] Write a test that simulates a user running `dev install <valid_url>` where a `dev.yml` is expected to be found. Assert that `simple-git`'s `clone` method is called with the correct arguments and that the `ExecutionEngine` is instantiated and its `run` method is called.
-    - [ ] Write a test for the case where `loadConfig` returns `null` (no `dev.yml`). Assert that `inquirer` is called to prompt the user to initialize a new config.
-- [ ] **4.2. Run Tests to Confirm Failure:** Run `npm test`.
-- [ ] **4.3. Implement `install` Command Logic**
-    - [ ] In `src/commands/install.js`, define the `install` command with its argument `<repo_url>` and option `--yes`.
-    - [ ] Implement the logic that uses your utilities to validate the URL and get the clone path.
-    - [ ] Use `simple-git` to perform the clone.
-    - [ ] Call your `config-parser`.
-    - [ ] Based on the result, either call the (mocked) `ExecutionEngine` or (mocked) `inquirer`.
-- [ ] **4.4. Run Tests to Confirm Pass:** Run `npm test` until the `install` command integration tests pass.
-- [ ] **4.5. Commit and Update:** Commit the `install` command structure and check off tasks.
+- [x] **4.1. Write Integration Tests for `install` command**
+    - [x] In a new file `tests/commands/install.test.js`, use `jest.mock` to mock `simple-git`, `inquirer`, and your `ExecutionEngine` (which doesn't exist yet but will be mocked).
+    - [x] Write a test that simulates a user running `dev install <valid_url>` where a `dev.yml` is expected to be found. Assert that `simple-git`'s `clone` method is called with the correct arguments and that the `ExecutionEngine` is instantiated and its `run` method is called.
+    - [x] Write a test for the case where `loadConfig` returns `null` (no `dev.yml`). Assert that `inquirer` is called to prompt the user to initialize a new config.
+- [x] **4.2. Run Tests to Confirm Failure:** Run `npm test`.
+- [x] **4.3. Implement `install` Command Logic**
+    - [x] In `src/commands/install.js`, define the `install` command with its argument `<repo_url>` and option `--yes`.
+    - [x] Implement the logic that uses your utilities to validate the URL and get the clone path.
+    - [x] Use `simple-git` to perform the clone.
+    - [x] Call your `config-parser`.
+    - [x] Based on the result, either call the (mocked) `ExecutionEngine` or (mocked) `inquirer`.
+- [x] **4.4. Run Tests to Confirm Pass:** Run `npm test` until the `install` command integration tests pass.
+- [x] **4.5. Commit and Update:** Commit the `install` command structure and check off tasks.
 
 ## Phase 5: The Execution Engine
 

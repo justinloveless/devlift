@@ -1,13 +1,62 @@
 import { Command } from 'commander';
+import simpleGit from 'simple-git';
+import { isValidGitUrl } from '../utils/validation.js';
+import { getClonePath } from '../utils/path.js';
+import { loadConfig, validateConfig } from '../core/config.js';
+import { ExecutionEngine } from '../core/execution-engine.js';
+import chalk from 'chalk';
+import inquirer from 'inquirer';
 
 const install = new Command('install')
     .description('Install and set up a repository from a URL')
     .argument('<repo_url>', 'The URL of the repository to install')
     .option('-y, --yes', 'Skip all interactive prompts')
-    .action((repoUrl, options) => {
-        console.log(`Installing from ${repoUrl}`);
-        if (options.yes) {
-            console.log('Skipping prompts.');
+    .action(async (repoUrl, options) => {
+        // 1. Validate URL
+        if (!isValidGitUrl(repoUrl)) {
+            console.error(chalk.red('Error: Invalid Git repository URL.'));
+            process.exit(1);
+        }
+
+        try {
+            // 2. Determine clone path and clone repo
+            const clonePath = getClonePath(repoUrl);
+            console.log(chalk.blue(`Cloning into ${clonePath}...`));
+            await simpleGit().clone(repoUrl, clonePath);
+
+            // 3. Load and validate config
+            console.log(chalk.blue('Looking for dev.yml...'));
+            const config = loadConfig(clonePath);
+            if (!config) {
+                console.log(chalk.yellow('No dev.yml configuration found.'));
+                const { proceed } = await inquirer.prompt([
+                    {
+                        type: 'confirm',
+                        name: 'proceed',
+                        message: 'Would you like to create a new configuration file for this project?',
+                        default: true,
+                    },
+                ]);
+
+                if (proceed) {
+                    // Future step: call the 'init' command's logic here
+                    console.log('Proceeding to create a new config...');
+                } else {
+                    console.log('Setup aborted.');
+                }
+                return;
+            }
+            validateConfig(config);
+
+            // 4. Run execution engine
+            console.log(chalk.blue('Configuration found. Starting setup...'));
+            const engine = new ExecutionEngine(config, clonePath);
+            await engine.run();
+
+            console.log(chalk.green('✅ Setup complete!'));
+        } catch (error) {
+            console.error(chalk.red(`An error occurred: ${error.message}`));
+            process.exit(1);
         }
     });
 
