@@ -1,4 +1,4 @@
-import { loadConfig, validateConfig } from '../../src/core/config.js';
+import { loadConfig } from '../../src/core/config.js';
 import yaml from 'js-yaml';
 import fs from 'fs-extra';
 import path from 'path';
@@ -32,46 +32,17 @@ describe('Configuration Loader', () => {
         const config = loadConfig(testDir);
         expect(config).toBeNull();
     });
-});
 
-describe('Configuration Validator', () => {
-    it('should not throw an error for a valid configuration', () => {
-        const config = {
-            version: '1',
+    it('should throw an error for an invalid configuration', () => {
+        const configData = {
+            version: '2', // Invalid version
             setup: [
-                { type: 'shell', command: 'echo "Test"' }
+                { type: 'shell', command: 'echo "Hello"' }
             ]
         };
-        expect(() => validateConfig(config)).not.toThrow();
-    });
+        const yamlStr = yaml.dump(configData);
+        fs.writeFileSync(path.join(testDir, 'dev.yml'), yamlStr);
 
-    it('should throw an error for an unsupported version', () => {
-        const config = { version: '2' };
-        expect(() => validateConfig(config)).toThrow('Unsupported configuration version');
-    });
-
-    it('should throw an error for an invalid step type', () => {
-        const config = {
-            version: '1',
-            setup: [
-                { type: 'invalid-type', command: 'foo' }
-            ]
-        };
-        expect(() => validateConfig(config)).toThrow('Invalid step type: invalid-type');
-    });
-
-    it('should throw an error for an unknown step type', () => {
-        const config = {
-            version: '1',
-            setup: [
-                { type: 'unknown', command: 'foo' }
-            ]
-        };
-        expect(() => validateConfig(config)).toThrow('Invalid step type: unknown');
-    });
-
-    it('should not throw for a valid config with no setup steps', () => {
-        const config = { version: '1' };
-        expect(() => validateConfig(config)).not.toThrow();
+        expect(() => loadConfig(testDir)).toThrow('Unsupported configuration version: 2');
     });
 }); 

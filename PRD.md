@@ -6,7 +6,7 @@
 Setting up a local development environment for a new project is often a complex, error-prone, and time-consuming process. Developers must manually follow instructions in `README` files, install various dependencies, configure environment variables, set up databases, and run initialization scripts. This process lacks standardization, leading to inconsistencies across developer machines and significant onboarding friction for new team members.
 
 ### 1.2. The Vision
-To create a universal command-line interface (CLI) tool, **`dev`**, that automates the entire process of setting up a repository for local development. Our vision is to enable any developer to clone and configure any project with a single, simple command: **`dev install <repository_url>`**.
+To create a universal command-line interface (CLI) tool, **`dev`**, that automates the entire process of setting up a repository for local development. Our vision is to enable any developer to clone and configure any project with a single, simple command: **`dev lift <repository_url>`**.
 
 ### 1.3. The Solution
 We will build a CLI tool that utilizes a configuration file within the target repository (e.g., `dev.yml`) to define all necessary setup steps. The tool will provide a user-friendly way for repository maintainers to generate this configuration file, and a seamless, automated experience for developers using it.
@@ -33,6 +33,9 @@ This file is the heart of the tool. It will be a YAML file, located in the root 
 ```yaml
 # A human-readable name for the project, used in logs and prompts.
 project_name: "My Awesome Web App"
+
+# The version of the dev-cli configuration schema.
+version: "1"
 
 # Defines environment variables needed for the project.
 environment:
@@ -88,14 +91,14 @@ post_setup:
     path: "."
 ```
 
-### 4.2. `dev install <repo_url>` Command
+### 4.2. `dev lift <repo_url>` Command
 This is the primary command for the end-user developer.
 
 **Workflow:**
 1.  **Input:** Accepts a Git repository URL (e.g., GitHub, GitLab, Bitbucket).
 2.  **Clone:** Clones the repository into a structured directory (e.g., `~/dev/<provider>/<org>/<repo>`). This base path should be user-configurable.
 3.  **Config Discovery:** Searches for a `dev.yml` file in the repository's root.
-    *   **If not found:** The tool gracefully degrades. It can either (a) attempt to infer setup steps (e.g., run `npm install` if `package.json` is found) or (b) prompt the user if they'd like to run the `init` command to create a config file now.
+    *   **If not found:** The tool gracefully degrades. It can either (a) attempt to infer setup steps (e.g., run `npm install` if `package.json` is found) or (b) prompt the user if they'd like to run the `prep` command to create a config file now.
 4.  **Execution Engine:** Parses and executes the steps in `dev.yml`.
     *   Provides clear, real-time feedback with spinners and logs for each step.
     *   If a step fails, it halts execution, provides detailed error logs, and suggests potential fixes.
@@ -103,7 +106,7 @@ This is the primary command for the end-user developer.
 6.  **Security Prompt:** Before executing any `shell` command, the tool will display the command and require explicit user confirmation. This can be bypassed with a `--yes` flag for trusted scripts or CI environments.
 7.  **Post-Setup:** Executes post-setup actions, such as displaying a success message or opening the project in the user's preferred editor.
 
-### 4.3. `dev init` Command
+### 4.3. `dev prep` Command
 This is the interactive wizard for repository maintainers to create the `dev.yml` file.
 
 **Workflow:**
@@ -128,4 +131,4 @@ This is the interactive wizard for repository maintainers to create the `dev.yml
 *   **`dev update` Command:** A command to pull the latest changes from the repository's main branch and intelligently re-run the necessary setup steps.
 *   **`dev teardown` Command:** A command to clean up the local environment, such as stopping Docker containers, removing `.env` files, and deleting build artifacts.
 *   **Plugin Ecosystem:** Allow third-party plugins to add support for new package managers, cloud provider integrations (e.g., AWS CLI configuration), or specific framework setups.
-*   **Centralized Config Repository:** An optional, community-driven repository of `dev.yml` files for popular open-source projects that don't have one, allowing users to do `dev install <repo_url> --with-config <config_name>`. 
+*   **Centralized Config Repository:** An optional, community-driven repository of `dev.yml` files for popular open-source projects that don't have one, allowing users to do `dev lift <repo_url> --with-config <config_name>`. 

@@ -28,9 +28,18 @@ jest.unstable_mockModule('../../src/core/execution-engine.js', () => ({
     ExecutionEngine: executionEngineMock,
 }));
 
+jest.unstable_mockModule('fs-extra', () => ({
+    default: {
+        pathExistsSync: jest.fn(),
+        readFileSync: jest.fn(),
+    },
+}));
+
 describe('Lift Command', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.clearAllMocks();
+        const { default: fs } = await import('fs-extra');
+        fs.pathExistsSync.mockReturnValue(false); // Default to no files existing
     });
 
     it('should clone the repo and run the execution engine when a valid config is found', async () => {
@@ -42,6 +51,8 @@ describe('Lift Command', () => {
         // Setup mocks
         const mockConfig = { version: '1', setup: [] };
         loadConfig.mockReturnValue(mockConfig);
+        const { default: fs } = await import('fs-extra');
+        fs.pathExistsSync.mockImplementation((p) => p.endsWith('package.json'));
 
         // Execute the command
         const repoUrl = 'https://github.com/test/repo.git';
@@ -50,7 +61,6 @@ describe('Lift Command', () => {
         // Assertions
         expect(cloneMock).toHaveBeenCalledWith(repoUrl, expect.any(String));
         expect(loadConfig).toHaveBeenCalled();
-        expect(validateConfig).toHaveBeenCalledWith(mockConfig);
         expect(executionEngineMock).toHaveBeenCalledWith(mockConfig, expect.any(String));
         expect(runMock).toHaveBeenCalled();
     });
@@ -72,16 +82,10 @@ describe('Lift Command', () => {
         expect(inquirer.prompt).toHaveBeenCalled();
     });
 
-    it('should exit if an invalid git URL is provided', async () => {
+    it('should throw an error if an invalid git URL is provided', async () => {
         const { default: liftCommand } = await import('../../src/commands/lift.js');
-        const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => { });
-        const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => { });
 
-        await liftCommand.parseAsync(['node', 'test', 'invalid-url']);
-
-        expect(mockExit).toHaveBeenCalledWith(1);
-        mockExit.mockRestore();
-        mockConsoleError.mockRestore();
+        await expect(liftCommand.parseAsync(['node', 'test', 'invalid-url'])).rejects.toThrow('Invalid Git repository URL.');
     });
 
     it('should abort if user declines to create a new config', async () => {
@@ -95,5 +99,34 @@ describe('Lift Command', () => {
         await liftCommand.parseAsync(['node', 'test', 'https://github.com/test/repo.git']);
 
         expect(inquirer.prompt).toHaveBeenCalled();
+    });
+
+    it('should infer setup steps if no config is found and a package.json exists', async () => {
+        const { loadConfig } = await import('../../src/core/config.js');
+        const { default: liftCommand } = await import('../../src/commands/lift.js');
+        const { default: fs } = await import('fs-extra');
+
+        // Setup mocks
+        loadConfig.mockReturnValue(null);
+        fs.pathExistsSync.mockReturnValue(true);
+
+        // Execute the command
+        const repoUrl = 'https://github.com/test/repo.git';
+        await liftCommand.parseAsync(['node', 'test', repoUrl]);
+
+        // Assertions
+        expect(loadConfig).toHaveBeenCalled();
+        expect(executionEngineMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                setup_steps: expect.arrayContaining([
+                    expect.objectContaining({
+                        name: 'Install npm dependencies',
+                        type: 'package-manager',
+                        command: 'install'
+                    })
+                ])
+            }),
+            expect.any(String)
+        );
     });
 }); 

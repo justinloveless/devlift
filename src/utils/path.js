@@ -1,5 +1,18 @@
 import * as os from 'os';
 import path from 'path';
+import fs from 'fs-extra';
+
+function getGlobalConfig() {
+    const configPath = path.join(os.homedir(), '.dev-cli', 'config.json');
+    if (fs.pathExistsSync(configPath)) {
+        try {
+            return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        } catch (error) {
+            return {};
+        }
+    }
+    return {};
+}
 
 /**
  * Generates a standardized local path to clone a repository into.
@@ -13,7 +26,8 @@ export function getClonePath(repoUrl) {
         .replace(/\.git$/, '')
         .replace(/:/, '/');
 
-    const basePath = path.join(os.homedir(), 'dev-cli', 'clones');
+    const config = getGlobalConfig();
+    const basePath = config.basePath || path.join(os.homedir(), 'dev-cli', 'clones');
 
     return path.join(basePath, normalizedUrl);
 } 

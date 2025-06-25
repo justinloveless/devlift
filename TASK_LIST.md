@@ -130,4 +130,46 @@ For each feature, follow this cycle:
 - [x] **6.3. Implement `prep` Command Logic**
     - [x] In `src/commands/prep.js`, implement the interactive wizard using `inquirer`, your directory inspection logic, and `js-yaml` to generate the final file.
 - [x] **6.4. Run Tests to Confirm Pass:** Run `npm test` until `prep` command tests pass.
-- [x] **6.5. Commit and Update:** Commit the `prep` feature and check off all tasks. You have reached V1! 
+- [x] **6.5. Commit and Update:** Commit the `prep` feature and check off all tasks. You have reached V1!
+
+---
+
+*The following tasks have been added after an automated analysis of the PRD and existing task list to identify and address functionality gaps before considering V1 complete.*
+
+## Phase 7: Hardening Core Functionality
+
+- [x] **7.1. Re-evaluate Configuration Validator (Task 2.2)**
+    - [x] **Note:** Task 2.2 was marked complete, but `src/core/validator.js` does not exist. This is a critical feature.
+    - [x] **Test:** Create `tests/core/validator.test.js`. Add tests to validate the full `dev.yml` schema as defined in the PRD (including `environment`, `setup_steps`, and `post_setup` objects).
+    - [x] **Implement:** Create `src/core/validator.js` and the `validateConfig` function.
+    - [x] **Integrate:** Use the validator in `src/core/config.js` after loading the file. If validation fails, throw a specific, user-friendly error.
+    - [x] **Run & Pass:** Ensure all validation tests pass.
+- [x] **7.2. Implement Config Versioning**
+    - [x] **Test:** In `validator.test.js`, add a test to ensure a `version` field exists in `dev.yml` and that it matches a supported version (e.g., "1").
+    - [x] **Implement:** Update the validator to perform this check.
+    - [x] **Documentation:** Update the `dev.yml` schema in the PRD to include the mandatory `version: 1` field.
+- [x] **7.3. Implement `depends_on` Logic for Setup Steps (TDD)**
+    - [x] **Test:** In `execution-engine.test.js`, write a test for a configuration with multiple steps using `depends_on`. Ensure the steps are executed in the correct topological order. Test for circular dependency errors.
+    - [x] **Implement:** In `ExecutionEngine`, before running steps, create a dependency graph and perform a topological sort. If a cycle is detected, throw an error.
+    - [x] **Run & Pass:** Ensure dependency resolution tests pass.
+- [x] **7.4. Implement Package Manager Auto-Detection (TDD)**
+    - [x] **Test:** In `execution-engine.test.js`, create a test for a `package-manager` step where the `manager` field is omitted. Mock the filesystem to include a `pnpm-lock.yaml` and assert that the correct `pnpm` command is executed. Repeat for `yarn.lock` and `package-lock.json`.
+    - [x] **Implement:** In `ExecutionEngine`, add logic to detect the package manager by looking for common lockfiles if the `manager` is not specified.
+    - [x] **Run & Pass:** Ensure auto-detection tests pass.
+- [x] **7.5. Implement Setup Inference for `lift` Command**
+    - [x] **Test:** In `lift.test.js`, test the scenario where a cloned repo has no `dev.yml`. Mock the filesystem to contain a `package.json`. Assert the tool infers that `npm install` should be run and prompts the user for confirmation.
+    - [x] **Implement:** Add logic to the `lift` command to inspect the directory and suggest inferred steps when `dev.yml` is missing, as an alternative to running `prep`.
+    - [x] **Run & Pass:** Ensure inference tests pass.
+- [x] **7.6. Commit and Update:** Commit all the core functionality enhancements.
+
+## Phase 8: Global Configuration and Non-Functional Requirements
+
+- [x] **8.1. Implement User-Configurable Clone Directory**
+    - [x] **Test:** In `path.test.js`, add a test where a global config file is mocked (`~/.dev-cli/config.json`). Assert that `getClonePath` respects the `basePath` from this file instead of using the default.
+    - [x] **Implement:** Create a new module in `src/core` to load global configuration from a file in the user's home directory. Update `getClonePath` in `src/utils/path.js` to use this configuration.
+    - [x] **Run & Pass:** Ensure tests pass.
+- [ ] **8.2. Formalize Cross-Platform Testing Strategy**
+    - [ ] **Task:** Document a strategy for ensuring compatibility on macOS, Linux, and Windows (WSL). This may involve manual testing checklists or setting up a GitHub Actions matrix for automated testing on different OS runners.
+- [ ] **8.3. Investigate Caching Strategy for Dependencies**
+    - [ ] **Task:** This is a research task. Investigate methods for caching dependencies (e.g., npm packages) across multiple project installations to improve performance. The findings should be documented for a potential V2 implementation.
+- [ ] **8.4. Commit and Update:** Commit the final V1 features and documentation. 

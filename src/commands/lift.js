@@ -2,10 +2,12 @@ import { Command } from 'commander';
 import simpleGit from 'simple-git';
 import { isValidGitUrl } from '../utils/validation.js';
 import { getClonePath } from '../utils/path.js';
-import { loadConfig, validateConfig } from '../core/config.js';
+import { loadConfig } from '../core/config.js';
 import { ExecutionEngine } from '../core/execution-engine.js';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
+import fs from 'fs-extra';
+import path from 'path';
 
 const lift = new Command('lift')
     .description('Lift a repository into a local development environment')
@@ -14,8 +16,7 @@ const lift = new Command('lift')
     .action(async (repoUrl, options) => {
         // 1. Validate URL
         if (!isValidGitUrl(repoUrl)) {
-            console.error(chalk.red('Error: Invalid Git repository URL.'));
-            process.exit(1);
+            throw new Error('Invalid Git repository URL.');
         }
 
         try {
@@ -26,27 +27,41 @@ const lift = new Command('lift')
 
             // 3. Load and validate config
             console.log(chalk.blue('Looking for dev.yml...'));
-            const config = loadConfig(clonePath);
+            let config = loadConfig(clonePath);
             if (!config) {
                 console.log(chalk.yellow('No dev.yml configuration found.'));
-                const { proceed } = await inquirer.prompt([
-                    {
-                        type: 'confirm',
-                        name: 'proceed',
-                        message: 'Would you like to create a new configuration file for this project?',
-                        default: true,
-                    },
-                ]);
 
-                if (proceed) {
-                    // Future step: call the 'init' command's logic here
-                    console.log('Proceeding to create a new config...');
+                if (fs.pathExistsSync(path.join(clonePath, 'package.json'))) {
+                    console.log(chalk.blue('Found package.json. Inferring setup steps...'));
+                    config = {
+                        version: '1',
+                        setup_steps: [
+                            {
+                                name: 'Install npm dependencies',
+                                type: 'package-manager',
+                                command: 'install'
+                            }
+                        ]
+                    };
                 } else {
-                    console.log('Setup aborted.');
+                    const { proceed } = await inquirer.prompt([
+                        {
+                            type: 'confirm',
+                            name: 'proceed',
+                            message: 'Would you like to create a new configuration file for this project?',
+                            default: true,
+                        },
+                    ]);
+
+                    if (proceed) {
+                        // Future step: call the 'init' command's logic here
+                        console.log('Proceeding to create a new config...');
+                    } else {
+                        console.log('Setup aborted.');
+                    }
+                    return;
                 }
-                return;
             }
-            validateConfig(config);
 
             // 4. Run execution engine
             console.log(chalk.blue('Configuration found. Starting setup...'));
@@ -56,7 +71,7 @@ const lift = new Command('lift')
             console.log(chalk.green('✅ Setup complete!'));
         } catch (error) {
             console.error(chalk.red(`An error occurred: ${error.message}`));
-            process.exit(1);
+            throw error;
         }
     });
 
