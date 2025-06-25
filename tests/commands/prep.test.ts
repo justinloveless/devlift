@@ -48,6 +48,15 @@ describe('Prep Command', () => {
         expect(typeof prepCommand.action).toBe('function');
     });
 
+    it('should have init alias', () => {
+        // Check that the command has aliases and includes 'init'
+        expect(Array.isArray(prepCommand.aliases())).toBe(true);
+        expect(prepCommand.aliases()).toContain('init');
+        // Check help shows the alias
+        const helpOutput = prepCommand.helpInformation();
+        expect(helpOutput).toContain('prep|init');
+    });
+
     it('should create a dev.yml file with user-provided steps', async () => {
         // No existing dev.yml file
         mockPathExistsSync.mockReturnValue(false);

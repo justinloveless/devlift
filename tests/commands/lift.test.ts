@@ -99,6 +99,15 @@ describe('Lift Command', () => {
         expect(normalizedOutput).toContain('lift');
     });
 
+    it('should have install alias', () => {
+        // Check that the command has aliases and includes 'install'
+        expect(Array.isArray(liftCommand.aliases())).toBe(true);
+        expect(liftCommand.aliases()).toContain('install');
+        // Check help shows the alias
+        const helpOutput = liftCommand.helpInformation();
+        expect(helpOutput).toContain('lift|install');
+    });
+
     it('should throw error for invalid input (neither URL nor path)', async () => {
         mockGetInputType.mockReturnValue('invalid');
 

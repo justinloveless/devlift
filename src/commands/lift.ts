@@ -10,6 +10,7 @@ import fs from 'fs-extra';
 import path from 'path';
 
 const lift = new Command('lift')
+    .alias('install')
     .description('Lift a repository into a local development environment')
     .argument('<repo_url_or_path>', 'The URL of the repository to lift or path to local repository')
     .option('-y, --yes', 'Skip all interactive prompts')

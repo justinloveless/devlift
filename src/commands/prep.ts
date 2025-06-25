@@ -11,6 +11,7 @@ interface SetupStep {
 }
 
 const prep = new Command('prep')
+    .alias('init')
     .description('Prepare a new dev.yml configuration file for the current project')
     .action(async () => {
         if (fs.pathExistsSync('dev.yml')) {

@@ -45,6 +45,15 @@ describe('Pump Command', () => {
         expect(helpOutput).toContain('--check-only');
     });
 
+    it('should have update alias', () => {
+        // Check that the command has aliases and includes 'update'
+        expect(Array.isArray(pumpCommand.aliases())).toBe(true);
+        expect(pumpCommand.aliases()).toContain('update');
+        // Check help shows the alias
+        const helpOutput = pumpCommand.helpInformation();
+        expect(helpOutput).toContain('pump|update');
+    });
+
     describe('version checking', () => {
         it('should check current and latest versions', async () => {
             const currentVersion = '1.0.5';

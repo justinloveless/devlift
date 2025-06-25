@@ -90,6 +90,7 @@ async function updateDevlift(): Promise<void> {
 }
 
 const pump = new Command('pump')
+    .alias('update')
     .description('Pump up devlift to the latest version (auto-update)')
     .option('-f, --force', 'Force update even if already on latest version')
     .option('-y, --yes', 'Skip confirmation prompts')

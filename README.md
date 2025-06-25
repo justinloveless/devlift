@@ -21,26 +21,55 @@ This will make the `dev` command available in your terminal, allowing you to `li
 
 ## Core Commands
 
-### `dev lift <repository_url>`
+### `dev lift <repository_url>` (alias: `install`)
 This is the primary command. It "lifts" the specified repository into your local environment, cloning it and then automatically executing the setup steps defined in its `dev.yml` file.
 
 **Usage:**
 ```bash
 dev lift https://github.com/some-org/some-repo.git
+# or use the conventional alias:
+dev install https://github.com/some-org/some-repo.git
 ```
 The tool will clone the repository into a standardized path (`~/devlift/clones/`) and then the Execution Engine will take over to complete the setup.
 
 If the target repository does not contain a `dev.yml` file, you will be prompted to `prep` one.
 
-### `dev prep`
+### `dev prep` (alias: `init`)
 This command launches an interactive wizard to help you `prep` a `dev.yml` file for your own project, getting it ready for a `lift`. It will guide you through defining the setup steps, such as running shell commands.
 
 **Usage:**
 ```bash
 cd /path/to/your/project
 dev prep
+# or use the conventional alias:
+dev init
 ```
 This will generate a `dev.yml` file in your current directory.
+
+### `dev pump` (alias: `update`)
+This command automatically updates `devlift` to the latest version. It's like giving your CLI tool a boost at the gym!
+
+**Usage:**
+```bash
+dev pump
+# or use the conventional alias:
+dev update
+```
+
+**Options:**
+- `--force` - Force update even if already on latest version
+- `--yes` - Skip confirmation prompts  
+- `--check-only` - Only check for updates, don't install
+
+## Command Aliases
+
+For users who prefer conventional command names, all commands have standard aliases:
+
+- `dev lift` → `dev install` (repository setup)
+- `dev prep` → `dev init` (configuration initialization)  
+- `dev pump` → `dev update` (auto-update devlift)
+
+Both names work identically - use whichever you prefer!
 
 ## Configuration (`dev.yml`)
 
