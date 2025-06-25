@@ -66,21 +66,21 @@ describe('Prep Command', () => {
             .mockResolvedValueOnce({ addStep: true })  // First: wants to add a step
             .mockResolvedValueOnce({
                 type: 'shell',
-                description: 'Install dependencies',
+                name: 'Install dependencies',
                 command: 'npm install'
             })  // Second: step details
             .mockResolvedValueOnce({ addMore: false }); // Third: doesn't want to add more
 
-        mockYamlDump.mockReturnValue('version: "1"\nsetup:\n  - type: shell\n    description: Install dependencies\n    command: npm install\n');
+        mockYamlDump.mockReturnValue('version: "1"\nsetup_steps:\n  - type: shell\n    name: Install dependencies\n    command: npm install\n');
 
         // Execute the prep command action
         await prepCommand.parseAsync(['node', 'test']);
 
         expect(mockYamlDump).toHaveBeenCalledWith({
             version: '1',
-            setup: [{
+            setup_steps: [{
                 type: 'shell',
-                description: 'Install dependencies',
+                name: 'Install dependencies',
                 command: 'npm install'
             }]
         });
@@ -90,13 +90,13 @@ describe('Prep Command', () => {
     it('should create a config with no steps if user adds none', async () => {
         mockPathExistsSync.mockReturnValue(false);
         mockInquirerPrompt.mockResolvedValueOnce({ addStep: false }); // User doesn't want to add any steps
-        mockYamlDump.mockReturnValue('version: "1"\nsetup: []\n');
+        mockYamlDump.mockReturnValue('version: "1"\nsetup_steps: []\n');
 
         await prepCommand.parseAsync(['node', 'test']);
 
         expect(mockYamlDump).toHaveBeenCalledWith({
             version: '1',
-            setup: []
+            setup_steps: []
         });
         expect(mockWriteFileSync).toHaveBeenCalledWith('dev.yml', expect.any(String));
     });
@@ -118,7 +118,7 @@ describe('Prep Command', () => {
         mockInquirerPrompt
             .mockResolvedValueOnce({ overwrite: true })  // User wants to overwrite
             .mockResolvedValueOnce({ addStep: false });  // User doesn't want to add steps
-        mockYamlDump.mockReturnValue('version: "1"\nsetup: []\n');
+        mockYamlDump.mockReturnValue('version: "1"\nsetup_steps: []\n');
 
         await prepCommand.parseAsync(['node', 'test']);
 
@@ -133,33 +133,33 @@ describe('Prep Command', () => {
             .mockResolvedValueOnce({ addStep: true })     // First: wants to add a step
             .mockResolvedValueOnce({
                 type: 'shell',
-                description: 'Install deps',
+                name: 'Install deps',
                 command: 'npm install'
             })                                            // Second: first step details
             .mockResolvedValueOnce({ addMore: true })     // Third: wants to add more
             .mockResolvedValueOnce({ addStep: true })     // Fourth: confirms adding another step
             .mockResolvedValueOnce({
                 type: 'shell',
-                description: 'Build project',
+                name: 'Build project',
                 command: 'npm run build'
             })                                            // Fifth: second step details
             .mockResolvedValueOnce({ addMore: false });   // Sixth: doesn't want to add more
 
-        mockYamlDump.mockReturnValue('version: "1"\nsetup: [...]\n');
+        mockYamlDump.mockReturnValue('version: "1"\nsetup_steps: [...]\n');
 
         await prepCommand.parseAsync(['node', 'test']);
 
         expect(mockYamlDump).toHaveBeenCalledWith({
             version: '1',
-            setup: [
+            setup_steps: [
                 {
                     type: 'shell',
-                    description: 'Install deps',
+                    name: 'Install deps',
                     command: 'npm install'
                 },
                 {
                     type: 'shell',
-                    description: 'Build project',
+                    name: 'Build project',
                     command: 'npm run build'
                 }
             ]

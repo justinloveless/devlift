@@ -6,7 +6,7 @@ import chalk from 'chalk';
 
 interface SetupStep {
     type: string;
-    description: string;
+    name: string;
     command: string;
 }
 
@@ -45,7 +45,7 @@ const prep = new Command('prep')
 
             const step = await inquirer.prompt([
                 { type: 'list', name: 'type', message: 'Step type:', choices: ['shell'] },
-                { type: 'input', name: 'description', message: 'Description for this step:' },
+                { type: 'input', name: 'name', message: 'Name for this step:' },
                 { type: 'input', name: 'command', message: 'Command to run:' },
             ]);
             steps.push(step);
@@ -58,7 +58,7 @@ const prep = new Command('prep')
 
         const config = {
             version: '1',
-            setup: steps,
+            setup_steps: steps,
         };
 
         const yamlStr = yaml.dump(config);
