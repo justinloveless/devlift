@@ -1,7 +1,7 @@
 {
   "name": "devlift",
-  "version": "1.0.7",
-  "description": "",
+  "version": "1.0.13",
+  "description": "Universal CLI tool for automating repository setup and development environment configuration",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
@@ -25,9 +25,24 @@
     "release:prepare:dry-run": "node scripts/release-prepare.js --dry-run",
     "setup:github-actions": "node scripts/setup-github-actions.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "devlift",
+    "cli",
+    "development",
+    "automation",
+    "setup",
+    "environment"
+  ],
+  "author": "Justin Loveless",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justinloveless/devlift.git"
+  },
+  "bugs": {
+    "url": "https://github.com/justinloveless/devlift/issues"
+  },
+  "homepage": "https://github.com/justinloveless/devlift#readme",
   "engines": {
     "node": ">=18.0.0"
   },

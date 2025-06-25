@@ -159,7 +159,7 @@ const pump = new Command('pump')
 
             if (comparison === 'outdated') {
                 console.log(chalk.magenta('\n🎉 Pump session complete! Here\'s what\'s new:'));
-                console.log(chalk.cyan(`   Check the changelog: https://github.com/your-username/devlift/releases/tag/v${latestVersion}`));
+                console.log(chalk.cyan(`   Check the changelog: https://github.com/justinloveless/devlift/releases/tag/v${latestVersion}`));
             }
 
         } catch (error) {

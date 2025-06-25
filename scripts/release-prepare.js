@@ -195,7 +195,7 @@ async function main() {
 
     if (!isDryRun) {
         console.log(chalk.cyan('🚀 GitHub Actions will now handle the publishing process'));
-        console.log(chalk.gray(`📋 Monitor the progress at: https://github.com/[your-username]/dev-cli/actions`));
+        console.log(chalk.gray(`📋 Monitor the progress at: https://github.com/justinloveless/devlift/actions`));
         console.log(chalk.gray(`🏷️  Git tag pushed: v${newVersion}`));
     } else {
         console.log(chalk.yellow('\n💡 This was a dry run. To actually prepare the release, run: npm run release:prepare'));

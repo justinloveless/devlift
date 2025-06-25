@@ -119,7 +119,7 @@ async function main() {
     console.log(chalk.cyan('\n🧪 To test your setup:'));
     console.log('1. Run: npm run release:prepare:dry-run');
     console.log('2. If that works, try: npm run release:prepare');
-    console.log('3. Monitor GitHub Actions at: https://github.com/[username]/[repo]/actions\n');
+    console.log('3. Monitor GitHub Actions at: https://github.com/justinloveless/devlift/actions\n');
 
     console.log(chalk.yellow('📋 Troubleshooting:'));
     console.log('- If you get authentication errors, check that NPM_TOKEN secret exists');
