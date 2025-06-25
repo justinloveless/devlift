@@ -68,21 +68,21 @@ For each feature, follow this cycle:
 
 ## Phase 3: Utilities (`validation.js`, `path.js`)
 
-- [ ] **3.1. Implement Git URL Validator**
-    - [ ] **3.1.1. Write Tests for `validation.js`:**
-        - [ ] Create `tests/utils/validation.test.js`.
-        - [ ] Write multiple test cases for `isValidGitUrl` with valid (`https`, `http`, `git@`) and invalid URLs.
-    - [ ] **3.1.2. Run Tests to Confirm Failure:** Run `npm test`.
-    - [ ] **3.1.3. Implement `validation.js`:** Create `src/utils/validation.js` and write the `isValidGitUrl` function using a regular expression.
-    - [ ] **3.1.4. Run Tests to Confirm Pass:** Run `npm test` until validation tests pass.
-- [ ] **3.2. Implement Clone Path Generator**
-    - [ ] **3.2.1. Write Tests for `path.js`:**
-        - [ ] Create `tests/utils/path.test.js`.
-        - [ ] Write a test for `getClonePath` that mocks the `os.homedir()` method to ensure predictable output. Assert that a URL like `https://github.com/org/repo.git` correctly resolves to `mocked_home/dev-cli/clones/github.com/org/repo`.
-    - [ ] **3.2.2. Run Tests to Confirm Failure:** Run `npm test`.
-    - [ ] **3.2.3. Implement `path.js`:** Create `src/utils/path.js` and write the `getClonePath` function.
-    - [ ] **3.2.4. Run Tests to Confirm Pass:** Run `npm test` until path tests pass.
-- [ ] **3.3. Commit and Update**
+- [x] **3.1. Implement Git URL Validator**
+    - [x] **3.1.1. Write Tests for `validation.js`:**
+        - [x] Create `tests/utils/validation.test.js`.
+        - [x] Write multiple test cases for `isValidGitUrl` with valid (`https`, `http`, `git@`) and invalid URLs.
+    - [x] **3.1.2. Run Tests to Confirm Failure:** Run `npm test`.
+    - [x] **3.1.3. Implement `validation.js`:** Create `src/utils/validation.js` and write the `isValidGitUrl` function using a regular expression.
+    - [x] **3.1.4. Run Tests to Confirm Pass:** Run `npm test` until validation tests pass.
+- [x] **3.2. Implement Clone Path Generator**
+    - [x] **3.2.1. Write Tests for `path.js`:**
+        - [x] Create `tests/utils/path.test.js`.
+        - [x] Write a test for `getClonePath` that mocks the `os.homedir()` method to ensure predictable output. Assert that a URL like `https://github.com/org/repo.git` correctly resolves to `mocked_home/dev-cli/clones/github.com/org/repo`.
+    - [x] **3.2.2. Run Tests to Confirm Failure:** Run `npm test`.
+    - [x] **3.2.3. Implement `path.js`:** Create `src/utils/path.js` and write the `getClonePath` function.
+    - [x] **3.2.4. Run Tests to Confirm Pass:** Run `npm test` until path tests pass.
+- [x] **3.3. Commit and Update**
     - [ ] Commit the utility functions to Git.
     - [ ] Check off all completed tasks in this phase.
 
