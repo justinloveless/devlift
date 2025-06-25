@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { program } from "commander"; // or const { program } = require('commander'); for CommonJS
 import pkg from '../package.json' with { type: 'json' };
 import installCommand from './commands/install.js';
