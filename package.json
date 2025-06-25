@@ -20,7 +20,9 @@
     "prepublishOnly": "npm run version:sync && npm run build && npm test",
     "publish:safe": "node scripts/publish.js",
     "release": "node scripts/publish-with-bump.js",
-    "release:dry-run": "node scripts/publish-with-bump.js --dry-run"
+    "release:dry-run": "node scripts/publish-with-bump.js --dry-run",
+    "release:prepare": "node scripts/release-prepare.js",
+    "release:prepare:dry-run": "node scripts/release-prepare.js --dry-run"
   },
   "keywords": [],
   "author": "",

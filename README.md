@@ -76,27 +76,43 @@ This project uses a `VERSION` file as the single source of truth for version num
 
 #### Publishing Workflow
 
-**Recommended: One-Command Release**
+**Recommended: GitHub Actions Publishing** 🚀
 ```bash
-# Full release workflow
-npm run release
+# Prepare release and trigger GitHub Actions
+npm run release:prepare
 
-# Test the workflow without actually publishing
-npm run release:dry-run
+# Test the workflow without pushing
+npm run release:prepare:dry-run
 ```
 
-This runs a complete workflow that:
+This modern workflow:
 1. **Interactive version bump** - Choose patch/minor/major
-2. **Run full test suite** - Ensures code quality  
-3. **Build the project** - Compiles TypeScript
-4. **Publish to npm** - Only if all steps succeed
-5. **Create git tag** - Optional version tagging
-6. **Auto-revert on failure** - Reverts version if tests/build fail
+2. **Run tests locally** - Validates before push  
+3. **Create git tag** - Triggers GitHub Actions
+4. **Automated CI/CD** - GitHub Actions handles publishing
+5. **Security** - Uses npm tokens stored as secrets
+6. **Multi-environment testing** - Tests on Node 16, 18, 20
 
-Use `npm run release:dry-run` to test the entire workflow without making any permanent changes.
+**Legacy: Local Publishing (Not Recommended)**
+```bash
+npm run release          # Local publishing 
+npm run release:dry-run  # Local dry run
+```
 
 **Manual Steps (if needed):**
-1. **Bump the version**: `npm run version:bump patch`
-2. **Publish safely**: `npm run publish:safe`
+```bash
+npm run version:bump patch  # Bump version manually
+npm run publish:safe        # Local publish (not recommended)
+```
 
-The release script ensures you never publish broken code and maintains version consistency by automatically reverting version changes if any step fails. 
+### GitHub Actions Setup
+
+To enable automated publishing, you need to:
+
+1. **Set up npm token**: Add `NPM_TOKEN` secret to GitHub repository
+2. **Configure environment**: Optionally set up `npm-publish` environment protection
+3. **Push version tag**: Use `npm run release:prepare` to trigger publishing
+
+See [GitHub Actions Setup Guide](docs/github-actions-setup.md) for detailed instructions.
+
+The GitHub Actions workflow ensures secure, tested, and consistent publishing while preventing manual errors. 
