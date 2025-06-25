@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { simpleGit } from 'simple-git';
-import { isValidGitUrl } from '../utils/validation.js';
+import { getInputType } from '../utils/validation.js';
 import { getClonePath } from '../utils/path.js';
 import { loadConfig, Config } from '../core/config.js';
 import { ExecutionEngine } from '../core/execution-engine.js';
@@ -11,27 +11,42 @@ import path from 'path';
 
 const lift = new Command('lift')
     .description('Lift a repository into a local development environment')
-    .argument('<repo_url>', 'The URL of the repository to lift')
+    .argument('<repo_url_or_path>', 'The URL of the repository to lift or path to local repository')
     .option('-y, --yes', 'Skip all interactive prompts')
-    .action(async (repoUrl: string, options: { yes?: boolean }) => {
-        // 1. Validate URL
-        if (!isValidGitUrl(repoUrl)) {
-            throw new Error('Invalid Git repository URL.');
+    .action(async (repoInput: string, options: { yes?: boolean }) => {
+        // 1. Determine input type and validate
+        const inputType = getInputType(repoInput);
+        if (inputType === 'invalid') {
+            throw new Error('Invalid input. Please provide either a valid Git repository URL or an existing local directory path.');
         }
 
+        let workingPath: string;
+
         try {
-            // 2. Determine clone path and clone repo
-            const clonePath = getClonePath(repoUrl);
-            console.log(chalk.blue(`Cloning into ${clonePath}...`));
-            await simpleGit().clone(repoUrl, clonePath);
+            if (inputType === 'url') {
+                // 2a. Clone remote repository
+                workingPath = getClonePath(repoInput);
+                console.log(chalk.blue(`Cloning into ${workingPath}...`));
+                await simpleGit().clone(repoInput, workingPath);
+            } else {
+                // 2b. Use existing local repository
+                workingPath = path.resolve(repoInput);
+                console.log(chalk.blue(`Using local repository at ${workingPath}...`));
+
+                // Check if it's a git repository
+                const isGitRepo = fs.pathExistsSync(path.join(workingPath, '.git'));
+                if (!isGitRepo) {
+                    console.log(chalk.yellow('Warning: This directory is not a Git repository.'));
+                }
+            }
 
             // 3. Load and validate config
             console.log(chalk.blue('Looking for dev.yml...'));
-            let config: Config | null = loadConfig(clonePath);
+            let config: Config | null = loadConfig(workingPath);
             if (!config) {
                 console.log(chalk.yellow('No dev.yml configuration found.'));
 
-                if (fs.pathExistsSync(path.join(clonePath, 'package.json'))) {
+                if (fs.pathExistsSync(path.join(workingPath, 'package.json'))) {
                     console.log(chalk.blue('Found package.json. Inferring setup steps...'));
                     config = {
                         version: '1',
@@ -65,7 +80,7 @@ const lift = new Command('lift')
 
             // 4. Run execution engine
             console.log(chalk.blue('Configuration found. Starting setup...'));
-            const engine = new ExecutionEngine(config, clonePath);
+            const engine = new ExecutionEngine(config, workingPath);
             await engine.run();
 
             console.log(chalk.green('✅ Setup complete!'));

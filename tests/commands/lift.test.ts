@@ -3,13 +3,15 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 // Create manual mocks
 const mockSimpleGit = jest.fn() as jest.MockedFunction<any>;
 const mockClone = jest.fn() as jest.MockedFunction<any>;
-const mockIsValidGitUrl = jest.fn() as jest.MockedFunction<any>;
+const mockGetInputType = jest.fn() as jest.MockedFunction<any>;
 const mockGetClonePath = jest.fn() as jest.MockedFunction<any>;
 const mockLoadConfig = jest.fn() as jest.MockedFunction<any>;
 const mockInquirerPrompt = jest.fn() as jest.MockedFunction<any>;
 const mockPathExistsSync = jest.fn() as jest.MockedFunction<any>;
 const mockExecutionEngineRun = jest.fn() as jest.MockedFunction<any>;
 const mockExecutionEngine = jest.fn() as jest.MockedFunction<any>;
+const mockPathResolve = jest.fn() as jest.MockedFunction<any>;
+const mockPathJoin = jest.fn() as jest.MockedFunction<any>;
 
 // Set up simple-git chain
 mockSimpleGit.mockReturnValue({
@@ -22,7 +24,14 @@ jest.unstable_mockModule('simple-git', () => ({
 }));
 
 jest.unstable_mockModule('../../src/utils/validation.js', () => ({
-    isValidGitUrl: mockIsValidGitUrl
+    getInputType: mockGetInputType
+}));
+
+jest.unstable_mockModule('path', () => ({
+    default: {
+        resolve: mockPathResolve,
+        join: mockPathJoin
+    }
 }));
 
 jest.unstable_mockModule('../../src/utils/path.js', () => ({
@@ -79,132 +88,197 @@ describe('Lift Command', () => {
     });
 
     it('should show help text with argument information', () => {
-        // Check help output contains repo_url information
+        // Check help output contains repo_url_or_path information
         const helpOutput = liftCommand.helpInformation();
-        expect(helpOutput).toContain('repo_url');
-        expect(helpOutput).toContain('URL of the repository to lift');
+        expect(helpOutput).toContain('repo_url_or_path');
+        expect(helpOutput).toContain('URL of the repository to lift or path to local repository');
     });
 
-    it('should throw error for invalid Git URL', async () => {
-        mockIsValidGitUrl.mockReturnValue(false);
+    it('should throw error for invalid input (neither URL nor path)', async () => {
+        mockGetInputType.mockReturnValue('invalid');
 
-        await expect(liftCommand.parseAsync(['node', 'test', 'invalid-url']))
-            .rejects.toThrow('Invalid Git repository URL.');
+        await expect(liftCommand.parseAsync(['node', 'test', 'invalid-input']))
+            .rejects.toThrow('Invalid input. Please provide either a valid Git repository URL or an existing local directory path.');
     });
 
-    it('should clone repo and run execution engine when valid config is found', async () => {
-        const repoUrl = 'https://github.com/test-user/test-repo.git';
-        const clonePath = '/mock/path/github.com/test-user/test-repo';
-        const mockConfig = {
-            version: '1',
-            setup_steps: [{ name: 'test', type: 'shell' as const, command: 'echo test' }]
-        };
+    // URL-based tests
+    describe('URL input tests', () => {
+        it('should clone repo and run execution engine when valid config is found', async () => {
+            const repoUrl = 'https://github.com/test-user/test-repo.git';
+            const clonePath = '/mock/path/github.com/test-user/test-repo';
+            const mockConfig = {
+                version: '1',
+                setup_steps: [{ name: 'test', type: 'shell' as const, command: 'echo test' }]
+            };
 
-        mockIsValidGitUrl.mockReturnValue(true);
-        mockGetClonePath.mockReturnValue(clonePath);
-        mockClone.mockResolvedValue(undefined);
-        mockLoadConfig.mockReturnValue(mockConfig);
+            mockGetInputType.mockReturnValue('url');
+            mockGetClonePath.mockReturnValue(clonePath);
+            mockClone.mockResolvedValue(undefined);
+            mockLoadConfig.mockReturnValue(mockConfig);
 
-        await liftCommand.parseAsync(['node', 'test', repoUrl]);
+            await liftCommand.parseAsync(['node', 'test', repoUrl]);
 
-        expect(mockClone).toHaveBeenCalledWith(repoUrl, clonePath);
-        expect(mockLoadConfig).toHaveBeenCalledWith(clonePath);
-        expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, clonePath);
-        expect(mockExecutionEngineRun).toHaveBeenCalled();
+            expect(mockClone).toHaveBeenCalledWith(repoUrl, clonePath);
+            expect(mockLoadConfig).toHaveBeenCalledWith(clonePath);
+            expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, clonePath);
+            expect(mockExecutionEngineRun).toHaveBeenCalled();
+        });
+
+        it('should infer setup steps when no config found but package.json exists', async () => {
+            const repoUrl = 'https://github.com/test-user/test-repo.git';
+            const clonePath = '/mock/path/github.com/test-user/test-repo';
+
+            mockGetInputType.mockReturnValue('url');
+            mockGetClonePath.mockReturnValue(clonePath);
+            mockClone.mockResolvedValue(undefined);
+            mockLoadConfig.mockReturnValue(null); // No config found
+            mockPathJoin.mockReturnValue('/mock/path/package.json');
+            mockPathExistsSync.mockReturnValue(true); // package.json exists
+
+            await liftCommand.parseAsync(['node', 'test', repoUrl]);
+
+            // Should create inferred config and run execution engine
+            expect(mockExecutionEngine).toHaveBeenCalledWith({
+                version: '1',
+                setup_steps: [{
+                    name: 'Install npm dependencies',
+                    type: 'package-manager',
+                    command: 'install'
+                }]
+            }, clonePath);
+            expect(mockExecutionEngineRun).toHaveBeenCalled();
+        });
+
+        it('should prompt user when no config found and no package.json', async () => {
+            const repoUrl = 'https://github.com/test-user/test-repo.git';
+            const clonePath = '/mock/path/github.com/test-user/test-repo';
+
+            mockGetInputType.mockReturnValue('url');
+            mockGetClonePath.mockReturnValue(clonePath);
+            mockClone.mockResolvedValue(undefined);
+            mockLoadConfig.mockReturnValue(null); // No config found
+            mockPathJoin.mockReturnValue('/mock/path/package.json');
+            mockPathExistsSync.mockReturnValue(false); // No package.json
+            mockInquirerPrompt.mockResolvedValue({ proceed: true });
+
+            await liftCommand.parseAsync(['node', 'test', repoUrl]);
+
+            expect(mockInquirerPrompt).toHaveBeenCalledWith([{
+                type: 'confirm',
+                name: 'proceed',
+                message: 'Would you like to create a new configuration file for this project?',
+                default: true
+            }]);
+            expect(mockExecutionEngine).not.toHaveBeenCalled();
+        });
     });
 
-    it('should infer setup steps when no config found but package.json exists', async () => {
-        const repoUrl = 'https://github.com/test-user/test-repo.git';
-        const clonePath = '/mock/path/github.com/test-user/test-repo';
+    // Local path tests
+    describe('Local path input tests', () => {
+        it('should use local repo and run execution engine when valid config is found', async () => {
+            const localPath = '/existing/local/repo';
+            const resolvedPath = '/resolved/local/repo';
+            const mockConfig = {
+                version: '1',
+                setup_steps: [{ name: 'test', type: 'shell' as const, command: 'echo test' }]
+            };
 
-        mockIsValidGitUrl.mockReturnValue(true);
-        mockGetClonePath.mockReturnValue(clonePath);
-        mockClone.mockResolvedValue(undefined);
-        mockLoadConfig.mockReturnValue(null); // No config found
-        mockPathExistsSync.mockReturnValue(true); // package.json exists
+            mockGetInputType.mockReturnValue('path');
+            mockPathResolve.mockReturnValue(resolvedPath);
+            mockPathJoin.mockReturnValue('/resolved/local/repo/.git');
+            mockPathExistsSync.mockReturnValue(true); // .git directory exists
+            mockLoadConfig.mockReturnValue(mockConfig);
 
-        await liftCommand.parseAsync(['node', 'test', repoUrl]);
+            await liftCommand.parseAsync(['node', 'test', localPath]);
 
-        // Should create inferred config and run execution engine
-        expect(mockExecutionEngine).toHaveBeenCalledWith({
-            version: '1',
-            setup_steps: [{
-                name: 'Install npm dependencies',
-                type: 'package-manager',
-                command: 'install'
-            }]
-        }, clonePath);
-        expect(mockExecutionEngineRun).toHaveBeenCalled();
+            expect(mockPathResolve).toHaveBeenCalledWith(localPath);
+            expect(mockClone).not.toHaveBeenCalled(); // Should not clone
+            expect(mockLoadConfig).toHaveBeenCalledWith(resolvedPath);
+            expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, resolvedPath);
+            expect(mockExecutionEngineRun).toHaveBeenCalled();
+        });
+
+        it('should show warning when local directory is not a git repository', async () => {
+            const localPath = '/existing/local/non-git';
+            const resolvedPath = '/resolved/local/non-git';
+            const mockConfig = {
+                version: '1',
+                setup_steps: [{ name: 'test', type: 'shell' as const, command: 'echo test' }]
+            };
+
+            mockGetInputType.mockReturnValue('path');
+            mockPathResolve.mockReturnValue(resolvedPath);
+            mockPathJoin.mockReturnValue('/resolved/local/non-git/.git');
+            mockPathExistsSync.mockReturnValue(false); // .git directory doesn't exist
+            mockLoadConfig.mockReturnValue(mockConfig);
+
+            await liftCommand.parseAsync(['node', 'test', localPath]);
+
+            expect(console.log).toHaveBeenCalledWith(
+                expect.stringContaining('Warning: This directory is not a Git repository.')
+            );
+            expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, resolvedPath);
+            expect(mockExecutionEngineRun).toHaveBeenCalled();
+        });
+
+        it('should infer setup steps for local repo when no config found but package.json exists', async () => {
+            const localPath = '/existing/local/repo';
+            const resolvedPath = '/resolved/local/repo';
+
+            mockGetInputType.mockReturnValue('path');
+            mockPathResolve.mockReturnValue(resolvedPath);
+            mockPathJoin.mockReturnValueOnce('/resolved/local/repo/.git'); // For git check
+            mockPathJoin.mockReturnValueOnce('/resolved/local/repo/package.json'); // For package.json check
+            mockPathExistsSync.mockReturnValueOnce(true); // .git exists
+            mockPathExistsSync.mockReturnValueOnce(true); // package.json exists
+            mockLoadConfig.mockReturnValue(null); // No config found
+
+            await liftCommand.parseAsync(['node', 'test', localPath]);
+
+            expect(mockExecutionEngine).toHaveBeenCalledWith({
+                version: '1',
+                setup_steps: [{
+                    name: 'Install npm dependencies',
+                    type: 'package-manager',
+                    command: 'install'
+                }]
+            }, resolvedPath);
+            expect(mockExecutionEngineRun).toHaveBeenCalled();
+        });
     });
 
-    it('should prompt user when no config found and no package.json', async () => {
-        const repoUrl = 'https://github.com/test-user/test-repo.git';
-        const clonePath = '/mock/path/github.com/test-user/test-repo';
+    // Error handling tests
+    describe('Error handling', () => {
+        it('should handle errors gracefully and re-throw them', async () => {
+            const repoUrl = 'https://github.com/test-user/test-repo.git';
+            const errorMessage = 'Git clone failed';
 
-        mockIsValidGitUrl.mockReturnValue(true);
-        mockGetClonePath.mockReturnValue(clonePath);
-        mockClone.mockResolvedValue(undefined);
-        mockLoadConfig.mockReturnValue(null); // No config found
-        mockPathExistsSync.mockReturnValue(false); // No package.json
-        mockInquirerPrompt.mockResolvedValue({ proceed: true });
+            mockGetInputType.mockReturnValue('url');
+            mockGetClonePath.mockReturnValue('/mock/path');
+            mockClone.mockRejectedValue(new Error(errorMessage));
 
-        await liftCommand.parseAsync(['node', 'test', repoUrl]);
+            await expect(liftCommand.parseAsync(['node', 'test', repoUrl]))
+                .rejects.toThrow(errorMessage);
 
-        expect(mockInquirerPrompt).toHaveBeenCalledWith([{
-            type: 'confirm',
-            name: 'proceed',
-            message: 'Would you like to create a new configuration file for this project?',
-            default: true
-        }]);
-        expect(mockExecutionEngine).not.toHaveBeenCalled();
-    });
+            expect(console.error).toHaveBeenCalledWith(
+                expect.stringContaining(`An error occurred: ${errorMessage}`)
+            );
+        });
 
-    it('should abort when user declines to create new config', async () => {
-        const repoUrl = 'https://github.com/test-user/test-repo.git';
-        const clonePath = '/mock/path/github.com/test-user/test-repo';
+        it('should handle non-Error exceptions', async () => {
+            const repoUrl = 'https://github.com/test-user/test-repo.git';
+            const errorValue = 'String error';
 
-        mockIsValidGitUrl.mockReturnValue(true);
-        mockGetClonePath.mockReturnValue(clonePath);
-        mockClone.mockResolvedValue(undefined);
-        mockLoadConfig.mockReturnValue(null);
-        mockPathExistsSync.mockReturnValue(false);
-        mockInquirerPrompt.mockResolvedValue({ proceed: false });
+            mockGetInputType.mockReturnValue('url');
+            mockGetClonePath.mockReturnValue('/mock/path');
+            mockClone.mockRejectedValue(errorValue);
 
-        await liftCommand.parseAsync(['node', 'test', repoUrl]);
+            await expect(liftCommand.parseAsync(['node', 'test', repoUrl]))
+                .rejects.toBe(errorValue);
 
-        expect(console.log).toHaveBeenCalledWith('Setup aborted.');
-        expect(mockExecutionEngine).not.toHaveBeenCalled();
-    });
-
-    it('should handle errors gracefully and re-throw them', async () => {
-        const repoUrl = 'https://github.com/test-user/test-repo.git';
-        const errorMessage = 'Git clone failed';
-
-        mockIsValidGitUrl.mockReturnValue(true);
-        mockGetClonePath.mockReturnValue('/mock/path');
-        mockClone.mockRejectedValue(new Error(errorMessage));
-
-        await expect(liftCommand.parseAsync(['node', 'test', repoUrl]))
-            .rejects.toThrow(errorMessage);
-
-        expect(console.error).toHaveBeenCalledWith(
-            expect.stringContaining(`An error occurred: ${errorMessage}`)
-        );
-    });
-
-    it('should handle non-Error exceptions', async () => {
-        const repoUrl = 'https://github.com/test-user/test-repo.git';
-        const errorValue = 'String error';
-
-        mockIsValidGitUrl.mockReturnValue(true);
-        mockGetClonePath.mockReturnValue('/mock/path');
-        mockClone.mockRejectedValue(errorValue);
-
-        await expect(liftCommand.parseAsync(['node', 'test', repoUrl]))
-            .rejects.toBe(errorValue);
-
-        expect(console.error).toHaveBeenCalledWith(
-            expect.stringContaining(`An error occurred: ${errorValue}`)
-        );
+            expect(console.error).toHaveBeenCalledWith(
+                expect.stringContaining(`An error occurred: ${errorValue}`)
+            );
+        });
     });
 }); 
