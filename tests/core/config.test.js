@@ -1,4 +1,4 @@
-import { loadConfig } from '../../src/core/config.js';
+import { loadConfig, validateConfig } from '../../src/core/config.js';
 import yaml from 'js-yaml';
 import fs from 'fs-extra';
 import path from 'path';
@@ -31,5 +31,32 @@ describe('Configuration Loader', () => {
     it('should return null if dev.yml does not exist', () => {
         const config = loadConfig(testDir);
         expect(config).toBeNull();
+    });
+});
+
+describe('Configuration Validator', () => {
+    it('should not throw an error for a valid configuration', () => {
+        const config = {
+            version: '1',
+            setup: [
+                { type: 'shell', command: 'echo "Test"' }
+            ]
+        };
+        expect(() => validateConfig(config)).not.toThrow();
+    });
+
+    it('should throw an error for an unsupported version', () => {
+        const config = { version: '2' };
+        expect(() => validateConfig(config)).toThrow('Unsupported configuration version');
+    });
+
+    it('should throw an error for an invalid step type', () => {
+        const config = {
+            version: '1',
+            setup: [
+                { type: 'invalid-type', command: 'foo' }
+            ]
+        };
+        expect(() => validateConfig(config)).toThrow('Invalid step type: invalid-type');
     });
 }); 

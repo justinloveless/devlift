@@ -54,21 +54,17 @@ For each feature, follow this cycle:
 
 ## Phase 2: Configuration (`dev.yml`) Handling
 
-- [ ] **2.1. Create `dev.yml` Parser**
-    - [ ] **2.1.1. Write Tests for `config-parser.js`:**
-        - [ ] Create `tests/core/config-parser.test.js`.
-        - [ ] Write a test case for `loadConfig` that simulates a non-existent `dev.yml` and asserts that the function returns `null`.
-        - [ ] Write a test case that provides a valid `dev.yml` and asserts that the function returns the correct parsed JavaScript object.
-        - [ ] Write a test case with a malformed YAML file and assert that it throws a specific, identifiable error.
-        - [ ] Write a test case with valid YAML but missing required keys (e.g., `project_name`) and assert that it throws a validation error.
-    - [ ] **2.1.2. Run Tests to Confirm Failure:** Run `npm test`. All new tests should fail.
-    - [ ] **2.1.3. Implement `config-parser.js`:**
-        - [ ] Create the file `src/core/config-parser.js`.
-        - [ ] Implement the `loadConfig` function to satisfy the tests. Use `fs-extra` to read the file and `js-yaml` to parse it. Include validation logic.
-    - [ ] **2.1.4. Run Tests to Confirm Pass:** Run `npm test` repeatedly, iterating on your code until all config parser tests pass.
-- [ ] **2.2. Commit and Update**
-    - [ ] Commit the config parser feature to Git.
-    - [ ] Check off all completed tasks in this phase.
+- [x] **2.1. Implement Configuration Loader**
+    - [x] **Test:** Create `tests/core/config.test.js`. Add tests for loading a valid `dev.yml` and for handling a missing file.
+    - [x] **Run & Fail:** Run `npm test` to confirm failure.
+    - [x] **Implement:** Create `src/core/config.js` with a `loadConfig(directory)` function that reads, parses, and returns the YAML content.
+    - [x] **Run & Pass:** Run `npm test` until all tests pass.
+- [x] **2.2. Implement Configuration Validator**
+    - [x] **Test:** In `tests/core/config.test.js`, add tests to validate the configuration schema. Test for a valid config, a config with an unsupported version, and a config with invalid step types.
+    - [x] **Run & Fail:** Confirm failure.
+    - [x] **Implement:** Create `src/core/validator.js` with a `validateConfig(config)` function. It should check for a supported `version` and validate the `setup` array against a predefined schema (e.g., each step must have a `type` and other required fields).
+    - [x] **Run & Pass:** Confirm all tests pass.
+- [x] **2.3. Commit and Update:** Commit the config loader and validator and check off tasks.
 
 ## Phase 3: Utilities (`validation.js`, `path.js`)
 

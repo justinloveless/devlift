@@ -20,4 +20,25 @@ export function loadConfig(directory) {
     const config = yaml.load(fileContents);
 
     return config;
+}
+
+const SUPPORTED_VERSIONS = ['1'];
+const SUPPORTED_STEP_TYPES = ['shell'];
+
+/**
+ * Validates the configuration object.
+ * @param {object} config - The configuration object to validate.
+ */
+export function validateConfig(config) {
+    if (!SUPPORTED_VERSIONS.includes(config.version)) {
+        throw new Error('Unsupported configuration version');
+    }
+
+    if (config.setup) {
+        for (const step of config.setup) {
+            if (!SUPPORTED_STEP_TYPES.includes(step.type)) {
+                throw new Error(`Invalid step type: ${step.type}`);
+            }
+        }
+    }
 } 
