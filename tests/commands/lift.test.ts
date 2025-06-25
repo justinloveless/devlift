@@ -91,7 +91,9 @@ describe('Lift Command', () => {
         // Check help output contains repo_url_or_path information
         const helpOutput = liftCommand.helpInformation();
         expect(helpOutput).toContain('repo_url_or_path');
-        expect(helpOutput).toContain('URL of the repository to lift or path to local repository');
+        // Check for key parts of the description (more resilient to line wrapping)
+        expect(helpOutput).toContain('URL of the repository to lift');
+        expect(helpOutput).toContain('path to local repository');
     });
 
     it('should throw error for invalid input (neither URL nor path)', async () => {
