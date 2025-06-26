@@ -21,6 +21,7 @@ interface PrepOptions {
     ai?: boolean;
     provider?: string;
     force?: boolean;
+    interactive?: boolean;
 }
 
 // Dependencies interface for testing
@@ -73,7 +74,10 @@ export async function runPrepCommand(options: PrepOptions, deps: PrepDependencie
     }
 
     try {
-        if (options.ai || options.provider) {
+        if (options.interactive) {
+            // Force manual/interactive mode
+            await generateManualConfig(deps);
+        } else if (options.ai || options.provider) {
             await generateSmartConfig(options, deps);
         } else {
             // Show the user their options
@@ -126,9 +130,28 @@ export async function runPrepCommand(options: PrepOptions, deps: PrepDependencie
 const prep = new Command('prep')
     .alias('init')
     .description('Prepare a new dev.yml configuration file for the current project')
-    .option('--ai', 'Use AI to automatically generate the configuration', false)
-    .option('--provider <provider>', 'AI provider to use (openai, anthropic, google)')
-    .option('--force', 'Overwrite existing dev.yml without confirmation', false)
+    .option('--ai', 'Use AI to automatically generate the configuration (recommended)')
+    .option('--provider <provider>', 'AI provider to use: openai, anthropic, google')
+    .option('--interactive', 'Force manual/interactive configuration mode')
+    .option('--force', 'Overwrite existing dev.yml without confirmation')
+    .addHelpText('after', `
+Examples:
+  $ dev prep                              # Choose between AI or manual mode
+  $ dev prep --ai                         # Use AI with provider selection
+  $ dev prep --ai --provider openai       # Use specific AI provider
+  $ dev prep --interactive                # Force manual configuration
+  $ dev prep --force                      # Overwrite existing dev.yml
+
+AI Providers:
+  openai      OpenAI GPT-4 (recommended)
+  anthropic   Anthropic Claude
+  google      Google Gemini
+
+Setup AI Provider:
+  Set environment variable with your API key:
+  $ export OPENAI_API_KEY=your_key_here
+  $ export ANTHROPIC_API_KEY=your_key_here  
+  $ export GOOGLE_API_KEY=your_key_here`)
     .action(async (options: PrepOptions) => {
         await runPrepCommand(options);
     });
