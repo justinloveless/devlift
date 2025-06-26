@@ -86,7 +86,8 @@ export GOOGLE_API_KEY="your_key_here"        # For Google AI
 - **Google Gemini** - [Get API key](https://makersuite.google.com/app/apikey)
 
 📖 **[Complete AI Setup Guide](docs/ai-setup-guide.md)** - Detailed instructions, troubleshooting, and best practices  
-🚀 **[AI Quick Reference](docs/ai-quick-reference.md)** - Commands, setup, and examples at a glance
+🚀 **[AI Quick Reference](docs/ai-quick-reference.md)** - Commands, setup, and examples at a glance  
+🧪 **[Beta Release Guide](docs/beta-release-guide.md)** - How to create and manage beta versions
 
 #### What AI Analysis Detects
 
@@ -141,6 +142,31 @@ For users who prefer conventional command names, all commands have standard alia
 - `dev pump` → `dev update` (auto-update devlift)
 
 Both names work identically - use whichever you prefer!
+
+## Beta Releases
+
+DevLift offers beta releases for early access to new features:
+
+```bash
+# Install latest beta version
+npm install -g devlift@beta
+
+# Check available versions
+npm view devlift dist-tags
+
+# Install specific beta version
+npm install -g devlift@1.1.0-beta.2
+```
+
+**Beta Features:**
+- 🧪 Early access to new functionality
+- 🚀 Latest AI improvements and providers
+- 🔧 Enhanced configuration options
+- 📋 Pre-release testing of major updates
+
+Beta versions are thoroughly tested but may contain experimental features. Perfect for trying new capabilities before they reach stable release.
+
+📋 **[Complete Beta Guide](docs/beta-release-guide.md)** - Installation, testing, and feedback
 
 ## Quick Start Examples
 

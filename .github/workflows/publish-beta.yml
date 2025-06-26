@@ -1,0 +1,202 @@
+name: Publish Beta to npm
+
+on:
+  # Trigger on beta version tags
+  push:
+    tags:
+      - 'beta-v*'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Beta version to publish (optional - will use package.json version if not provided)'
+        required: false
+        type: string
+
+# Required permissions for GitHub release creation
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests
+        run: npm test
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-dist-beta
+          path: dist/
+          retention-days: 1
+
+  publish-beta:
+    name: Publish Beta to npm
+    runs-on: ubuntu-latest
+    needs: test
+    environment: npm-publish
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-dist-beta
+          path: dist/
+          
+      - name: Sync version from VERSION file
+        run: npm run version:sync
+        
+      - name: Verify version consistency
+        run: |
+          VERSION_FILE=$(cat VERSION)
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION file: $VERSION_FILE"
+          echo "package.json version: $PACKAGE_VERSION"
+          if [ "$VERSION_FILE" != "$PACKAGE_VERSION" ]; then
+            echo "❌ Version mismatch between VERSION file and package.json"
+            exit 1
+          fi
+          echo "✅ Version consistency verified"
+          
+      - name: Get version for tagging  
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Verify beta version format
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          if [[ ! "$VERSION" =~ -beta\.[0-9]+$ ]]; then
+            echo "❌ Version $VERSION is not a valid beta version (must end with -beta.X)"
+            exit 1
+          fi
+          echo "✅ Beta version format verified: $VERSION"
+          
+      - name: Verify npm authentication
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "❌ NPM_TOKEN secret is not set or empty"
+            echo "Please add NPM_TOKEN to your GitHub repository secrets"
+            exit 1
+          fi
+          echo "✅ NPM_TOKEN is configured"
+          npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
+      - name: Check if beta version exists on npm
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          if npm view devlift@$VERSION version 2>/dev/null; then
+            echo "❌ Beta version $VERSION already exists on npm"
+            exit 1
+          fi
+          echo "✅ Beta version $VERSION is available for publishing"
+          
+      - name: Publish beta to npm
+        run: npm publish --tag beta --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
+      - name: Create GitHub pre-release
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          TAG_NAME="beta-v${VERSION}"
+          
+          # Create pre-release using GitHub CLI
+          gh release create "$TAG_NAME" \
+            --title "Beta Release v${VERSION}" \
+            --notes "## 🧪 Beta Release v${VERSION}
+
+          Published to npm beta channel: https://www.npmjs.com/package/devlift/v/${VERSION}
+          
+          ### Installation (Beta)
+          \`\`\`bash
+          npm install -g devlift@beta
+          # or specific version:
+          npm install -g devlift@${VERSION}
+          \`\`\`
+          
+          ### ⚠️ Beta Notice
+          This is a pre-release version for testing new features. Use with caution in production environments.
+          
+          ### Testing & Feedback
+          Please test this beta version and report any issues or feedback:
+          - 🐛 [Report bugs](https://github.com/justinloveless/devlift/issues)
+          - 💬 [Share feedback](https://github.com/justinloveless/devlift/discussions)
+          
+          ### Changes
+          - See commit history for detailed changes since last stable release" \
+            --prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update beta dist-tag
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          npm dist-tag add devlift@${VERSION} beta
+          echo "✅ Updated beta dist-tag to point to ${VERSION}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  notification:
+    name: Notify Beta Success
+    runs-on: ubuntu-latest
+    needs: [test, publish-beta]
+    if: success()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Success notification
+        run: |
+          VERSION=$(cat VERSION || echo 'unknown')
+          echo "🧪 Successfully published devlift v${VERSION} to npm beta channel!"
+          echo "📦 Beta package is now available at: https://www.npmjs.com/package/devlift"
+          echo "🏷️  Install with: npm install -g devlift@beta"
+          echo "🔗 Or specific version: npm install -g devlift@${VERSION}"
+          echo "🎁 GitHub pre-release created: https://github.com/${{ github.repository }}/releases/tag/beta-v${VERSION}"
+          echo ""
+          echo "💡 After testing, promote to stable with: npm run beta:promote" 
