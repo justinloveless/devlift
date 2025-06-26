@@ -19,7 +19,7 @@ export abstract class AIProvider {
      * Generate a response from the AI provider
      */
     generateResponse(prompt: string): Promise<string> {
-        throw new Error('generateResponse must be implemented by subclass');
+        return Promise.reject(new Error('generateResponse must be implemented by subclass'));
     }
 
     /**

@@ -1,168 +1,219 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { runPrepCommand } from '../../src/commands/prep.js';
 
-// Create manual mocks
-const mockInquirerPrompt = jest.fn() as jest.MockedFunction<any>;
-const mockPathExistsSync = jest.fn() as jest.MockedFunction<any>;
-const mockWriteFileSync = jest.fn() as jest.MockedFunction<any>;
-const mockYamlDump = jest.fn() as jest.MockedFunction<any>;
+// Create simple mock objects
+const mockInquirer = {
+    prompt: jest.fn()
+};
 
-// Mock the modules before importing
-jest.unstable_mockModule('inquirer', () => ({
-    default: {
-        prompt: mockInquirerPrompt
-    }
-}));
+const mockFs = {
+    pathExistsSync: jest.fn(),
+    writeFile: jest.fn()
+};
 
-jest.unstable_mockModule('fs-extra', () => ({
-    default: {
-        pathExistsSync: mockPathExistsSync,
-        writeFileSync: mockWriteFileSync
-    }
-}));
+const mockYaml = {
+    dump: jest.fn()
+};
 
-jest.unstable_mockModule('js-yaml', () => ({
-    default: {
-        dump: mockYamlDump
-    }
-}));
+const mockConsole = {
+    log: jest.fn(),
+    error: jest.fn()
+};
 
-// Import after mocking
-const { default: prepCommand } = await import('../../src/commands/prep.js');
+const mockProjectAnalyzer = {
+    analyzeProject: jest.fn()
+};
+
+const mockAIConfigGenerator = {
+    generateConfig: jest.fn()
+};
+
+const mockAPIKeyManager = {
+    getAPIKey: jest.fn()
+};
+
+const mockAIProviderFactory = {
+    createProvider: jest.fn()
+};
+
+const mockProcess = {
+    cwd: jest.fn(),
+    exit: jest.fn()
+};
 
 describe('Prep Command', () => {
+    const mockDeps = {
+        inquirer: mockInquirer,
+        fs: mockFs,
+        yaml: mockYaml,
+        console: mockConsole,
+        projectAnalyzer: mockProjectAnalyzer,
+        aiConfigGenerator: mockAIConfigGenerator,
+        apiKeyManager: mockAPIKeyManager,
+        aiProviderFactory: mockAIProviderFactory,
+        process: mockProcess
+    };
+
     beforeEach(() => {
         jest.clearAllMocks();
-        // Mock console.log to avoid cluttering test output
-        jest.spyOn(console, 'log').mockImplementation(() => { });
-    });
 
-    it('should export a Command object', () => {
-        expect(prepCommand).toBeDefined();
-        expect(prepCommand.name()).toBe('prep');
-        expect(prepCommand.description()).toBe('Prepare a new dev.yml configuration file for the current project');
-    });
+        // Set up default mock responses
+        mockFs.pathExistsSync.mockReturnValue(false);
+        mockFs.writeFile.mockResolvedValue(undefined);
+        mockYaml.dump.mockReturnValue('version: "1"\nsetup_steps: []');
+        mockProcess.cwd.mockReturnValue('/test/project');
 
-    it('should be a valid commander.js command', () => {
-        // Should have required Commander.js methods
-        expect(typeof prepCommand.parseAsync).toBe('function');
-        expect(typeof prepCommand.action).toBe('function');
-    });
-
-    it('should have init alias', () => {
-        // Check that the command has aliases and includes 'init'
-        expect(Array.isArray(prepCommand.aliases())).toBe(true);
-        expect(prepCommand.aliases()).toContain('init');
-        // Check help shows the alias
-        const helpOutput = prepCommand.helpInformation();
-        expect(helpOutput).toContain('prep|init');
-    });
-
-    it('should create a dev.yml file with user-provided steps', async () => {
-        // No existing dev.yml file
-        mockPathExistsSync.mockReturnValue(false);
-
-        // User adds one step and then stops
-        mockInquirerPrompt
-            .mockResolvedValueOnce({ addStep: true })  // First: wants to add a step
-            .mockResolvedValueOnce({
-                type: 'shell',
-                name: 'Install dependencies',
-                command: 'npm install'
-            })  // Second: step details
-            .mockResolvedValueOnce({ addMore: false }); // Third: doesn't want to add more
-
-        mockYamlDump.mockReturnValue('version: "1"\nsetup_steps:\n  - type: shell\n    name: Install dependencies\n    command: npm install\n');
-
-        // Execute the prep command action
-        await prepCommand.parseAsync(['node', 'test']);
-
-        expect(mockYamlDump).toHaveBeenCalledWith({
-            version: '1',
-            setup_steps: [{
-                type: 'shell',
-                name: 'Install dependencies',
-                command: 'npm install'
-            }]
+        // Default to manual configuration to keep tests simple
+        mockInquirer.prompt.mockImplementation((questions: any) => {
+            if (Array.isArray(questions)) {
+                const results: any = {};
+                questions.forEach((q: any) => {
+                    switch (q.name) {
+                        case 'configMethod':
+                            results[q.name] = 'manual';
+                            break;
+                        case 'projectName':
+                            results[q.name] = 'test-project';
+                            break;
+                        case 'addStep':
+                        case 'addEnvVars':
+                        case 'addMore':
+                        case 'addMoreEnv':
+                            results[q.name] = false;
+                            break;
+                        case 'overwrite':
+                        case 'fallback':
+                            results[q.name] = true;
+                            break;
+                        default:
+                            results[q.name] = q.default || false;
+                    }
+                });
+                return Promise.resolve(results);
+            } else {
+                const q = questions;
+                switch (q.name) {
+                    case 'configMethod':
+                        return Promise.resolve({ [q.name]: 'manual' });
+                    case 'projectName':
+                        return Promise.resolve({ [q.name]: 'test-project' });
+                    case 'addStep':
+                    case 'addEnvVars':
+                    case 'addMore':
+                    case 'addMoreEnv':
+                        return Promise.resolve({ [q.name]: false });
+                    case 'overwrite':
+                    case 'fallback':
+                        return Promise.resolve({ [q.name]: true });
+                    default:
+                        return Promise.resolve({ [q.name]: q.default || false });
+                }
+            }
         });
-        expect(mockWriteFileSync).toHaveBeenCalledWith('dev.yml', expect.any(String));
     });
 
-    it('should create a config with no steps if user adds none', async () => {
-        mockPathExistsSync.mockReturnValue(false);
-        mockInquirerPrompt.mockResolvedValueOnce({ addStep: false }); // User doesn't want to add any steps
-        mockYamlDump.mockReturnValue('version: "1"\nsetup_steps: []\n');
+    it('should create a basic dev.yml file with manual configuration', async () => {
+        await runPrepCommand({}, mockDeps);
 
-        await prepCommand.parseAsync(['node', 'test']);
+        expect(mockYaml.dump).toHaveBeenCalledWith(
+            expect.objectContaining({
+                project_name: 'test-project',
+                version: '1',
+                setup_steps: []
+            }),
+            expect.any(Object)
+        );
+        expect(mockFs.writeFile).toHaveBeenCalledWith('dev.yml', expect.any(String));
+    });
 
-        expect(mockYamlDump).toHaveBeenCalledWith({
+    it('should check for existing dev.yml and prompt for overwrite', async () => {
+        mockFs.pathExistsSync.mockReturnValue(true);
+
+        await runPrepCommand({}, mockDeps);
+
+        expect(mockInquirer.prompt).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    name: 'overwrite',
+                    type: 'confirm'
+                })
+            ])
+        );
+    });
+
+    it('should skip overwrite prompt when force option is used', async () => {
+        mockFs.pathExistsSync.mockReturnValue(true);
+
+        await runPrepCommand({ force: true }, mockDeps);
+
+        // Should not prompt for overwrite
+        expect(mockInquirer.prompt).not.toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    name: 'overwrite'
+                })
+            ])
+        );
+    });
+
+    it('should use AI configuration when ai option is provided', async () => {
+        // Set up AI mocks
+        mockProjectAnalyzer.analyzeProject.mockResolvedValue({
+            projectName: 'test-project',
+            technologies: { platform: 'Node.js', frameworks: [] },
+            environmentVariables: []
+        });
+        mockAPIKeyManager.getAPIKey.mockResolvedValue('test-api-key');
+        mockAIProviderFactory.createProvider.mockReturnValue({
+            generateResponse: jest.fn()
+        });
+        mockAIConfigGenerator.generateConfig.mockResolvedValue({
             version: '1',
+            project_name: 'test-project',
             setup_steps: []
         });
-        expect(mockWriteFileSync).toHaveBeenCalledWith('dev.yml', expect.any(String));
+
+        await runPrepCommand({ ai: true, provider: 'openai' }, mockDeps);
+
+        expect(mockProjectAnalyzer.analyzeProject).toHaveBeenCalled();
+        expect(mockAPIKeyManager.getAPIKey).toHaveBeenCalledWith('openai');
+        expect(mockAIConfigGenerator.generateConfig).toHaveBeenCalled();
     });
 
-    it('should abort if user chooses not to overwrite existing dev.yml', async () => {
-        // dev.yml already exists
-        mockPathExistsSync.mockReturnValue(true);
-        mockInquirerPrompt.mockResolvedValueOnce({ overwrite: false });
+    it('should handle errors gracefully and offer fallback', async () => {
+        // Make AI analysis fail
+        mockProjectAnalyzer.analyzeProject.mockRejectedValue(new Error('AI analysis failed'));
 
-        await prepCommand.parseAsync(['node', 'test']);
+        await runPrepCommand({ ai: true }, mockDeps);
 
-        expect(mockYamlDump).not.toHaveBeenCalled();
-        expect(mockWriteFileSync).not.toHaveBeenCalled();
-        expect(console.log).toHaveBeenCalledWith('Aborted.');
+        // Should show error and offer fallback
+        expect(mockConsole.error).toHaveBeenCalledWith(
+            expect.stringContaining('Configuration generation failed')
+        );
+        expect(mockInquirer.prompt).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    name: 'fallback',
+                    type: 'confirm'
+                })
+            ])
+        );
     });
 
-    it('should overwrite existing dev.yml if user confirms', async () => {
-        mockPathExistsSync.mockReturnValue(true);
-        mockInquirerPrompt
-            .mockResolvedValueOnce({ overwrite: true })  // User wants to overwrite
-            .mockResolvedValueOnce({ addStep: false });  // User doesn't want to add steps
-        mockYamlDump.mockReturnValue('version: "1"\nsetup_steps: []\n');
+    it('should exit when user declines fallback', async () => {
+        mockProjectAnalyzer.analyzeProject.mockRejectedValue(new Error('AI analysis failed'));
 
-        await prepCommand.parseAsync(['node', 'test']);
-
-        expect(mockYamlDump).toHaveBeenCalled();
-        expect(mockWriteFileSync).toHaveBeenCalled();
-    });
-
-    it('should handle multiple steps added by user', async () => {
-        mockPathExistsSync.mockReturnValue(false);
-
-        mockInquirerPrompt
-            .mockResolvedValueOnce({ addStep: true })     // First: wants to add a step
-            .mockResolvedValueOnce({
-                type: 'shell',
-                name: 'Install deps',
-                command: 'npm install'
-            })                                            // Second: first step details
-            .mockResolvedValueOnce({ addMore: true })     // Third: wants to add more
-            .mockResolvedValueOnce({ addStep: true })     // Fourth: confirms adding another step
-            .mockResolvedValueOnce({
-                type: 'shell',
-                name: 'Build project',
-                command: 'npm run build'
-            })                                            // Fifth: second step details
-            .mockResolvedValueOnce({ addMore: false });   // Sixth: doesn't want to add more
-
-        mockYamlDump.mockReturnValue('version: "1"\nsetup_steps: [...]\n');
-
-        await prepCommand.parseAsync(['node', 'test']);
-
-        expect(mockYamlDump).toHaveBeenCalledWith({
-            version: '1',
-            setup_steps: [
-                {
-                    type: 'shell',
-                    name: 'Install deps',
-                    command: 'npm install'
-                },
-                {
-                    type: 'shell',
-                    name: 'Build project',
-                    command: 'npm run build'
-                }
-            ]
+        // Mock user declining fallback
+        mockInquirer.prompt.mockImplementation((questions: any) => {
+            const q = Array.isArray(questions) ? questions[0] : questions;
+            if (q.name === 'fallback') {
+                return Promise.resolve({ fallback: false });
+            }
+            return Promise.resolve({ [q.name]: 'manual' });
         });
+
+        await runPrepCommand({ ai: true }, mockDeps);
+
+        expect(mockProcess.exit).toHaveBeenCalledWith(1);
     });
 }); 

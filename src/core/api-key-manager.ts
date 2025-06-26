@@ -18,14 +18,36 @@ interface GlobalConfig {
     [key: string]: any;
 }
 
+// Dependencies interface for testing
+export interface APIKeyManagerDependencies {
+    fs: typeof fs;
+    os: typeof os;
+    path: typeof path;
+    inquirer: typeof inquirer;
+    process: typeof process;
+    console: typeof console;
+}
+
+// Default dependencies
+const defaultDependencies: APIKeyManagerDependencies = {
+    fs,
+    os,
+    path,
+    inquirer,
+    process,
+    console
+};
+
 /**
  * APIKeyManager handles secure storage and retrieval of AI provider API keys
  */
 export class APIKeyManager {
     private configPath: string;
+    private deps: APIKeyManagerDependencies;
 
-    constructor() {
-        this.configPath = path.join(os.homedir(), '.devlift', 'config.json');
+    constructor(deps: APIKeyManagerDependencies = defaultDependencies) {
+        this.deps = deps;
+        this.configPath = this.deps.path.join(this.deps.os.homedir(), '.devlift', 'config.json');
     }
 
     /**
@@ -65,8 +87,8 @@ export class APIKeyManager {
             let config: GlobalConfig = {};
 
             // Read existing config if it exists
-            if (await fs.pathExists(this.configPath)) {
-                config = await fs.readJSON(this.configPath);
+            if (await this.deps.fs.pathExists(this.configPath)) {
+                config = await this.deps.fs.readJSON(this.configPath);
             }
 
             // Ensure apiKeys object exists
@@ -78,10 +100,10 @@ export class APIKeyManager {
             config.apiKeys[provider] = apiKey;
 
             // Ensure directory exists
-            await fs.ensureDir(path.dirname(this.configPath));
+            await this.deps.fs.ensureDir(this.deps.path.dirname(this.configPath));
 
             // Write the config
-            await fs.writeJSON(this.configPath, config, { spaces: 2 });
+            await this.deps.fs.writeJSON(this.configPath, config, { spaces: 2 });
         } catch (error) {
             throw new Error(`Failed to save API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
@@ -92,19 +114,19 @@ export class APIKeyManager {
      */
     async removeAPIKey(provider: AIProviderType): Promise<void> {
         try {
-            if (!(await fs.pathExists(this.configPath))) {
+            if (!(await this.deps.fs.pathExists(this.configPath))) {
                 return; // No config file, nothing to remove
             }
 
-            const config: GlobalConfig = await fs.readJSON(this.configPath);
+            const config: GlobalConfig = await this.deps.fs.readJSON(this.configPath);
 
             if (config.apiKeys && config.apiKeys[provider]) {
                 delete config.apiKeys[provider];
-                await fs.writeJSON(this.configPath, config, { spaces: 2 });
+                await this.deps.fs.writeJSON(this.configPath, config, { spaces: 2 });
             }
         } catch (error) {
             // Silently handle errors when removing keys
-            console.warn(`Warning: Could not remove API key for ${provider}:`, error);
+            this.deps.console.warn(`Warning: Could not remove API key for ${provider}:`, error);
         }
     }
 
@@ -113,11 +135,11 @@ export class APIKeyManager {
      */
     async listSavedProviders(): Promise<AIProviderType[]> {
         try {
-            if (!(await fs.pathExists(this.configPath))) {
+            if (!(await this.deps.fs.pathExists(this.configPath))) {
                 return [];
             }
 
-            const config: GlobalConfig = await fs.readJSON(this.configPath);
+            const config: GlobalConfig = await this.deps.fs.readJSON(this.configPath);
 
             if (!config.apiKeys || typeof config.apiKeys !== 'object') {
                 return [];
@@ -159,7 +181,7 @@ export class APIKeyManager {
             }
         ];
 
-        return await inquirer.prompt(questions) as APIKeyPromptResult;
+        return await this.deps.inquirer.prompt(questions) as APIKeyPromptResult;
     }
 
     /**
@@ -197,7 +219,7 @@ export class APIKeyManager {
         const envVars = this.getEnvironmentVariables(provider);
 
         for (const envVar of envVars) {
-            const value = process.env[envVar];
+            const value = this.deps.process.env[envVar];
             if (value && this.validateAPIKey(provider, value)) {
                 return value;
             }
@@ -211,11 +233,11 @@ export class APIKeyManager {
      */
     private async getFromConfig(provider: AIProviderType): Promise<string | null> {
         try {
-            if (!(await fs.pathExists(this.configPath))) {
+            if (!(await this.deps.fs.pathExists(this.configPath))) {
                 return null;
             }
 
-            const config: GlobalConfig = await fs.readJSON(this.configPath);
+            const config: GlobalConfig = await this.deps.fs.readJSON(this.configPath);
 
             if (config.apiKeys && config.apiKeys[provider]) {
                 const key = config.apiKeys[provider];

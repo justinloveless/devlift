@@ -1,14 +1,22 @@
 import { jest } from '@jest/globals';
-import { ProjectAnalyzer } from '../../src/core/project-analyzer.js';
-import fs from 'fs-extra';
 import path from 'path';
 
-// Mock fs-extra
-jest.mock('fs-extra');
+// Mock fs-extra before importing anything that uses it
+const mockFs = {
+    readdir: jest.fn() as jest.MockedFunction<any>,
+    stat: jest.fn() as jest.MockedFunction<any>,
+    readFile: jest.fn() as jest.MockedFunction<any>
+};
+
+jest.unstable_mockModule('fs-extra', () => ({
+    default: mockFs
+}));
+
+// Import after mocking
+const { ProjectAnalyzer } = await import('../../src/core/project-analyzer.js');
 
 describe('Project Content Analyzer', () => {
-    let analyzer: ProjectAnalyzer;
-    const mockFs = fs as jest.Mocked<typeof fs>;
+    let analyzer: InstanceType<typeof ProjectAnalyzer>;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -86,63 +94,47 @@ describe('Project Content Analyzer', () => {
 
     describe('extractContent', () => {
         test('should extract content from various file types', async () => {
-            const mockFiles = [
+            const files = [
                 '/test/package.json',
                 '/test/README.md',
                 '/test/.env.example',
                 '/test/docker-compose.yml'
             ];
 
-            const mockContents = {
-                '/test/package.json': JSON.stringify({
-                    name: 'test-project',
-                    scripts: {
-                        dev: 'next dev',
-                        build: 'next build',
-                        start: 'next start',
-                        'db:migrate': 'prisma migrate dev'
-                    },
-                    dependencies: {
-                        'next': '^13.0.0',
-                        'prisma': '^4.0.0'
-                    }
-                }),
-                '/test/README.md': '# Test Project\n\n## Setup\n\nRun `npm install` then `npm run dev`',
-                '/test/.env.example': 'DATABASE_URL=postgresql://localhost:5432/test\nAPI_KEY=your-api-key-here',
-                '/test/docker-compose.yml': 'version: "3.8"\nservices:\n  db:\n    image: postgres:13'
-            };
+            mockFs.readFile
+                .mockResolvedValueOnce('{"name": "test-project"}')
+                .mockResolvedValueOnce('# Test Project\nSetup instructions...')
+                .mockResolvedValueOnce('DATABASE_URL=postgresql://localhost:5432/test')
+                .mockResolvedValueOnce('version: "3.8"\nservices:\n  app:\n    build: .');
 
-            mockFs.readFile.mockImplementation((filePath: string) => {
-                return Promise.resolve(mockContents[filePath as keyof typeof mockContents] || '');
+            const result = await analyzer.extractContent(files);
+
+            expect(result).toEqual({
+                'package.json': '{"name": "test-project"}',
+                'README.md': '# Test Project\nSetup instructions...',
+                '.env.example': 'DATABASE_URL=postgresql://localhost:5432/test',
+                'docker-compose.yml': 'version: "3.8"\nservices:\n  app:\n    build: .'
             });
-
-            const result = await analyzer.extractContent(mockFiles);
-
-            expect(result).toHaveProperty('package.json');
-            expect(result).toHaveProperty('README.md');
-            expect(result).toHaveProperty('.env.example');
-            expect(result).toHaveProperty('docker-compose.yml');
-
-            expect(result['package.json']).toContain('test-project');
-            expect(result['README.md']).toContain('npm install');
-            expect(result['.env.example']).toContain('DATABASE_URL');
-            expect(result['docker-compose.yml']).toContain('postgres');
+            expect(mockFs.readFile).toHaveBeenCalledTimes(4);
         });
 
         test('should handle file read errors gracefully', async () => {
-            const mockFiles = ['/test/package.json', '/test/missing.json'];
+            const files = [
+                '/test/package.json',
+                '/test/unreadable.txt'
+            ];
 
-            mockFs.readFile.mockImplementation((filePath: string) => {
-                if (filePath.includes('missing')) {
-                    return Promise.reject(new Error('File not found'));
-                }
-                return Promise.resolve('{"name": "test"}');
+            mockFs.readFile
+                .mockResolvedValueOnce('{"name": "test-project"}')
+                .mockRejectedValueOnce(new Error('Permission denied'));
+
+            const result = await analyzer.extractContent(files);
+
+            expect(result).toEqual({
+                'package.json': '{"name": "test-project"}'
+                // unreadable.txt should be omitted due to error
             });
-
-            const result = await analyzer.extractContent(mockFiles);
-
-            expect(result).toHaveProperty('package.json');
-            expect(result).not.toHaveProperty('missing.json');
+            expect(mockFs.readFile).toHaveBeenCalledTimes(2);
         });
     });
 
@@ -356,41 +348,51 @@ services:
 
     describe('analyzeProject', () => {
         test('should perform complete project analysis', async () => {
-            const mockFiles = ['/test/package.json', '/test/README.md', '/test/.env.example'];
-            const mockContents = {
-                '/test/package.json': JSON.stringify({
-                    name: 'test-project',
-                    scripts: { dev: 'next dev' },
-                    dependencies: { 'next': '^13.0.0' }
-                }),
-                '/test/README.md': '# Test Project\nRun npm install',
-                '/test/.env.example': 'DATABASE_URL=postgresql://localhost:5432/test'
-            };
-
-            mockFs.readdir.mockResolvedValue(['package.json', 'README.md', '.env.example'] as any);
-            mockFs.stat.mockResolvedValue({ isDirectory: () => false, isFile: () => true } as any);
-            mockFs.readFile.mockImplementation((filePath: string) => {
-                return Promise.resolve(mockContents[filePath as keyof typeof mockContents] || '');
+            // Mock the file discovery
+            mockFs.readdir.mockResolvedValueOnce(['package.json', '.env.example', 'README.md']);
+            mockFs.stat.mockImplementation((filePath: string) => {
+                return Promise.resolve({
+                    isDirectory: () => false,
+                    isFile: () => true
+                } as any);
             });
+
+            // Mock file content reading
+            mockFs.readFile
+                .mockResolvedValueOnce(JSON.stringify({
+                    name: 'my-awesome-app',
+                    dependencies: { 'express': '^4.18.0', 'prisma': '^4.0.0' },
+                    scripts: { 'dev': 'node server.js', 'build': 'npm run compile' }
+                }))
+                .mockResolvedValueOnce('DATABASE_URL=postgresql://localhost:5432/test\nAPI_KEY=secret123')
+                .mockResolvedValueOnce('# My Awesome App\nSetup instructions here...');
 
             const result = await analyzer.analyzeProject('/test/project');
 
             expect(result).toEqual(expect.objectContaining({
-                projectName: 'test-project',
+                projectName: 'my-awesome-app',
                 technologies: expect.objectContaining({
                     platform: 'node',
-                    frameworks: expect.arrayContaining(['next'])
+                    frameworks: expect.arrayContaining(['express']),
+                    databases: expect.arrayContaining(['prisma'])
                 }),
                 environmentVariables: expect.arrayContaining([
-                    expect.objectContaining({ name: 'DATABASE_URL' })
+                    expect.objectContaining({ name: 'DATABASE_URL' }),
+                    expect.objectContaining({ name: 'API_KEY', isSecret: true })
                 ]),
                 commands: expect.objectContaining({
-                    dev: expect.arrayContaining(['npm run dev'])
+                    dev: expect.arrayContaining(['npm run dev']),
+                    build: expect.arrayContaining(['npm run build'])
                 }),
                 files: expect.objectContaining({
-                    'package.json': expect.any(String)
+                    'package.json': expect.any(String),
+                    '.env.example': expect.any(String),
+                    'README.md': expect.any(String)
                 })
             }));
+
+            expect(mockFs.readdir).toHaveBeenCalled();
+            expect(mockFs.readFile).toHaveBeenCalledTimes(3);
         });
     });
 }); 

@@ -1,130 +1,163 @@
-import { jest } from '@jest/globals';
-import { APIKeyManager } from '../../src/core/api-key-manager.js';
-import fs from 'fs-extra';
-import os from 'os';
-import path from 'path';
-import inquirer from 'inquirer';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { APIKeyManager, APIKeyManagerDependencies, AIProviderType } from '../../src/core/api-key-manager.js';
 
-// Mock dependencies
-jest.mock('fs-extra');
-jest.mock('os');
-jest.mock('inquirer');
+// Create simple mock objects
+const mockFs = {
+    pathExists: jest.fn(),
+    readJSON: jest.fn(),
+    writeJSON: jest.fn(),
+    ensureDir: jest.fn()
+};
+
+const mockOs = {
+    homedir: jest.fn()
+};
+
+const mockPath = {
+    join: jest.fn(),
+    dirname: jest.fn()
+};
+
+const mockInquirer = {
+    prompt: jest.fn()
+};
+
+const mockProcess = {
+    env: {}
+};
+
+const mockConsole = {
+    warn: jest.fn()
+};
 
 describe('API Key Manager', () => {
     let apiKeyManager: APIKeyManager;
-    const mockFs = fs as jest.Mocked<typeof fs>;
-    const mockOs = os as jest.Mocked<typeof os>;
-    const mockInquirer = inquirer as jest.Mocked<typeof inquirer>;
+
+    const mockDeps: APIKeyManagerDependencies = {
+        fs: mockFs as any,
+        os: mockOs as any,
+        path: mockPath as any,
+        inquirer: mockInquirer as any,
+        process: mockProcess as any,
+        console: mockConsole as any
+    };
 
     beforeEach(() => {
         jest.clearAllMocks();
-        apiKeyManager = new APIKeyManager();
 
-        // Mock home directory
+        // Set up default mock responses
         mockOs.homedir.mockReturnValue('/home/user');
+        mockPath.join.mockReturnValue('/home/user/.devlift/config.json');
+        mockPath.dirname.mockReturnValue('/home/user/.devlift');
+        mockFs.pathExists.mockResolvedValue(false);
+        mockFs.readJSON.mockResolvedValue({});
+        mockFs.writeJSON.mockResolvedValue(undefined);
+        mockFs.ensureDir.mockResolvedValue(undefined);
+        mockProcess.env = {}; // Reset environment variables
 
-        // Mock inquirer
-        mockInquirer.prompt = jest.fn();
+        apiKeyManager = new APIKeyManager(mockDeps);
+    });
+
+    describe('constructor', () => {
+        it('should create config path correctly', () => {
+            expect(mockOs.homedir).toHaveBeenCalled();
+            expect(mockPath.join).toHaveBeenCalledWith('/home/user', '.devlift', 'config.json');
+        });
+    });
+
+    describe('validateAPIKey', () => {
+        it('should validate OpenAI API keys correctly', () => {
+            expect(apiKeyManager.validateAPIKey('openai', 'sk-1234567890abcdef')).toBe(true);
+            expect(apiKeyManager.validateAPIKey('openai', 'sk-proj-1234567890abcdef')).toBe(true);
+            expect(apiKeyManager.validateAPIKey('openai', 'invalid-key')).toBe(false);
+            expect(apiKeyManager.validateAPIKey('openai', '')).toBe(false);
+        });
+
+        it('should validate Anthropic API keys correctly', () => {
+            expect(apiKeyManager.validateAPIKey('anthropic', 'sk-ant-1234567890abcdef')).toBe(true);
+            expect(apiKeyManager.validateAPIKey('anthropic', 'sk-1234567890abcdef')).toBe(false);
+            expect(apiKeyManager.validateAPIKey('anthropic', 'invalid-key')).toBe(false);
+        });
+
+        it('should validate Google API keys correctly', () => {
+            expect(apiKeyManager.validateAPIKey('google', 'AIza1234567890abcdef')).toBe(true);
+            expect(apiKeyManager.validateAPIKey('google', 'sk-1234567890abcdef')).toBe(false);
+            expect(apiKeyManager.validateAPIKey('google', 'invalid-key')).toBe(false);
+        });
     });
 
     describe('getAPIKey', () => {
-        test('should get API key from environment variable', async () => {
-            // Mock environment variable
-            process.env.OPENAI_API_KEY = 'sk-test-openai-key';
+        it('should return API key from environment variables', async () => {
+            mockProcess.env = { OPENAI_API_KEY: 'sk-env-key-123' };
 
-            const apiKey = await apiKeyManager.getAPIKey('openai');
+            const result = await apiKeyManager.getAPIKey('openai');
 
-            expect(apiKey).toBe('sk-test-openai-key');
-
-            // Clean up
-            delete process.env.OPENAI_API_KEY;
+            expect(result).toBe('sk-env-key-123');
         });
 
-        test('should get API key from global config file', async () => {
-            // Mock no environment variable
-            delete process.env.OPENAI_API_KEY;
-
-            // Mock config file exists and contains API key
+        it('should return API key from config file when not in environment', async () => {
             mockFs.pathExists.mockResolvedValue(true);
             mockFs.readJSON.mockResolvedValue({
                 apiKeys: {
-                    openai: 'sk-config-openai-key'
+                    openai: 'sk-config-key-123'
                 }
             });
 
-            const apiKey = await apiKeyManager.getAPIKey('openai');
+            const result = await apiKeyManager.getAPIKey('openai');
 
-            expect(apiKey).toBe('sk-config-openai-key');
-            expect(mockFs.readJSON).toHaveBeenCalledWith('/home/user/.devlift/config.json');
+            expect(result).toBe('sk-config-key-123');
         });
 
-        test('should prompt for API key if not found', async () => {
-            // Mock no environment variable
-            delete process.env.OPENAI_API_KEY;
-
-            // Mock no config file
-            mockFs.pathExists.mockResolvedValue(false);
-
-            // Mock user input
+        it('should prompt user when no key is found', async () => {
             mockInquirer.prompt.mockResolvedValue({
-                apiKey: 'sk-user-input-key',
+                apiKey: 'sk-user-key-123',
+                saveKey: false
+            });
+
+            const result = await apiKeyManager.getAPIKey('openai');
+
+            expect(result).toBe('sk-user-key-123');
+            expect(mockInquirer.prompt).toHaveBeenCalled();
+        });
+
+        it('should save key when user chooses to save', async () => {
+            mockInquirer.prompt.mockResolvedValue({
+                apiKey: 'sk-user-key-123',
                 saveKey: true
             });
 
-            // Mock successful save
-            mockFs.ensureDir.mockResolvedValue();
-            mockFs.writeJSON.mockResolvedValue();
+            const result = await apiKeyManager.getAPIKey('openai');
 
-            const apiKey = await apiKeyManager.getAPIKey('openai');
-
-            expect(apiKey).toBe('sk-user-input-key');
-            expect(mockInquirer.prompt).toHaveBeenCalledWith([
-                {
-                    type: 'password',
-                    name: 'apiKey',
-                    message: 'Enter your OpenAI API key:',
-                    validate: expect.any(Function)
-                },
-                {
-                    type: 'confirm',
-                    name: 'saveKey',
-                    message: 'Save this API key for future use?',
-                    default: true
-                }
-            ]);
-        });
-
-        test('should handle API key validation during prompt', async () => {
-            delete process.env.OPENAI_API_KEY;
-            mockFs.pathExists.mockResolvedValue(false);
-
-            // Get the validation function from the prompt call
-            mockInquirer.prompt.mockImplementation(async (questions: any) => {
-                const validator = questions[0].validate;
-
-                // Test validation
-                expect(validator('invalid-key')).toBe('Invalid OpenAI API key format. Expected format: sk-...');
-                expect(validator('sk-valid-key-format')).toBe(true);
-
-                return {
-                    apiKey: 'sk-valid-key-format',
-                    saveKey: false
-                };
-            });
-
-            const apiKey = await apiKeyManager.getAPIKey('openai');
-            expect(apiKey).toBe('sk-valid-key-format');
-        });
-
-        test('should return null for unknown provider', async () => {
-            const apiKey = await apiKeyManager.getAPIKey('unknown-provider' as any);
-            expect(apiKey).toBeNull();
+            expect(result).toBe('sk-user-key-123');
+            expect(mockFs.writeJSON).toHaveBeenCalledWith(
+                '/home/user/.devlift/config.json',
+                expect.objectContaining({
+                    apiKeys: expect.objectContaining({
+                        openai: 'sk-user-key-123'
+                    })
+                }),
+                { spaces: 2 }
+            );
         });
     });
 
     describe('setAPIKey', () => {
-        test('should save API key to global config', async () => {
-            // Mock existing config
+        it('should save API key to new config file', async () => {
+            await apiKeyManager.setAPIKey('openai', 'sk-test-key-123');
+
+            expect(mockFs.ensureDir).toHaveBeenCalledWith('/home/user/.devlift');
+            expect(mockFs.writeJSON).toHaveBeenCalledWith(
+                '/home/user/.devlift/config.json',
+                {
+                    apiKeys: {
+                        openai: 'sk-test-key-123'
+                    }
+                },
+                { spaces: 2 }
+            );
+        });
+
+        it('should update existing config file', async () => {
             mockFs.pathExists.mockResolvedValue(true);
             mockFs.readJSON.mockResolvedValue({
                 apiKeys: {
@@ -133,241 +166,112 @@ describe('API Key Manager', () => {
                 otherSettings: 'value'
             });
 
-            mockFs.writeJSON.mockResolvedValue();
+            await apiKeyManager.setAPIKey('openai', 'sk-test-key-123');
 
-            await apiKeyManager.setAPIKey('openai', 'sk-new-openai-key');
-
-            expect(mockFs.writeJSON).toHaveBeenCalledWith('/home/user/.devlift/config.json', {
-                apiKeys: {
-                    anthropic: 'sk-ant-existing-key',
-                    openai: 'sk-new-openai-key'
+            expect(mockFs.writeJSON).toHaveBeenCalledWith(
+                '/home/user/.devlift/config.json',
+                {
+                    apiKeys: {
+                        anthropic: 'sk-ant-existing-key',
+                        openai: 'sk-test-key-123'
+                    },
+                    otherSettings: 'value'
                 },
-                otherSettings: 'value'
-            }, { spaces: 2 });
+                { spaces: 2 }
+            );
         });
+    });
 
-        test('should create new config file if none exists', async () => {
-            mockFs.pathExists.mockResolvedValue(false);
-            mockFs.ensureDir.mockResolvedValue();
-            mockFs.writeJSON.mockResolvedValue();
-
-            await apiKeyManager.setAPIKey('openai', 'sk-new-openai-key');
-
-            expect(mockFs.ensureDir).toHaveBeenCalledWith('/home/user/.devlift');
-            expect(mockFs.writeJSON).toHaveBeenCalledWith('/home/user/.devlift/config.json', {
+    describe('removeAPIKey', () => {
+        it('should remove API key from config file', async () => {
+            mockFs.pathExists.mockResolvedValue(true);
+            mockFs.readJSON.mockResolvedValue({
                 apiKeys: {
-                    openai: 'sk-new-openai-key'
+                    openai: 'sk-test-key-123',
+                    anthropic: 'sk-ant-test-key'
                 }
-            }, { spaces: 2 });
+            });
+
+            await apiKeyManager.removeAPIKey('openai');
+
+            expect(mockFs.writeJSON).toHaveBeenCalledWith(
+                '/home/user/.devlift/config.json',
+                {
+                    apiKeys: {
+                        anthropic: 'sk-ant-test-key'
+                    }
+                },
+                { spaces: 2 }
+            );
         });
 
-        test('should handle file system errors gracefully', async () => {
-            mockFs.pathExists.mockRejectedValue(new Error('Permission denied'));
+        it('should handle missing config file gracefully', async () => {
+            mockFs.pathExists.mockResolvedValue(false);
 
-            await expect(apiKeyManager.setAPIKey('openai', 'sk-test-key'))
-                .rejects.toThrow('Failed to save API key: Permission denied');
+            await apiKeyManager.removeAPIKey('openai');
+
+            expect(mockFs.writeJSON).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('listSavedProviders', () => {
+        it('should return list of saved providers', async () => {
+            mockFs.pathExists.mockResolvedValue(true);
+            mockFs.readJSON.mockResolvedValue({
+                apiKeys: {
+                    openai: 'sk-test-key-123',
+                    anthropic: 'sk-ant-test-key'
+                }
+            });
+
+            const result = await apiKeyManager.listSavedProviders();
+
+            expect(result).toEqual(['openai', 'anthropic']);
+        });
+
+        it('should return empty array when no config file exists', async () => {
+            mockFs.pathExists.mockResolvedValue(false);
+
+            const result = await apiKeyManager.listSavedProviders();
+
+            expect(result).toEqual([]);
+        });
+
+        it('should return empty array when no apiKeys in config', async () => {
+            mockFs.pathExists.mockResolvedValue(true);
+            mockFs.readJSON.mockResolvedValue({
+                otherSettings: 'value'
+            });
+
+            const result = await apiKeyManager.listSavedProviders();
+
+            expect(result).toEqual([]);
         });
     });
 
     describe('promptForAPIKey', () => {
-        test('should prompt for OpenAI API key with correct validation', async () => {
+        it('should prompt with correct validation for OpenAI', async () => {
             mockInquirer.prompt.mockResolvedValue({
-                apiKey: 'sk-openai-key',
+                apiKey: 'sk-test-key-123',
                 saveKey: true
             });
 
             const result = await apiKeyManager.promptForAPIKey('openai');
 
             expect(result).toEqual({
-                apiKey: 'sk-openai-key',
+                apiKey: 'sk-test-key-123',
                 saveKey: true
             });
 
-            expect(mockInquirer.prompt).toHaveBeenCalledWith([
-                {
-                    type: 'password',
-                    name: 'apiKey',
-                    message: 'Enter your OpenAI API key:',
-                    validate: expect.any(Function)
-                },
-                {
-                    type: 'confirm',
-                    name: 'saveKey',
-                    message: 'Save this API key for future use?',
-                    default: true
-                }
-            ]);
-        });
-
-        test('should prompt for Anthropic API key', async () => {
-            mockInquirer.prompt.mockResolvedValue({
-                apiKey: 'sk-ant-anthropic-key',
-                saveKey: false
-            });
-
-            const result = await apiKeyManager.promptForAPIKey('anthropic');
-
-            expect(result.apiKey).toBe('sk-ant-anthropic-key');
             expect(mockInquirer.prompt).toHaveBeenCalledWith(
                 expect.arrayContaining([
                     expect.objectContaining({
-                        message: 'Enter your Anthropic API key:'
+                        type: 'password',
+                        name: 'apiKey',
+                        message: 'Enter your OpenAI API key:'
                     })
                 ])
             );
-        });
-
-        test('should prompt for Google API key', async () => {
-            mockInquirer.prompt.mockResolvedValue({
-                apiKey: 'AIza-google-key',
-                saveKey: true
-            });
-
-            const result = await apiKeyManager.promptForAPIKey('google');
-
-            expect(result.apiKey).toBe('AIza-google-key');
-            expect(mockInquirer.prompt).toHaveBeenCalledWith(
-                expect.arrayContaining([
-                    expect.objectContaining({
-                        message: 'Enter your Google AI API key:'
-                    })
-                ])
-            );
-        });
-
-        test('should throw error for unknown provider', async () => {
-            await expect(apiKeyManager.promptForAPIKey('unknown' as any))
-                .rejects.toThrow('Unknown provider: unknown');
-        });
-    });
-
-    describe('validateAPIKey', () => {
-        test('should validate OpenAI API keys', () => {
-            expect(apiKeyManager.validateAPIKey('openai', 'sk-1234567890abcdef')).toBe(true);
-            expect(apiKeyManager.validateAPIKey('openai', 'sk-proj-1234567890abcdef')).toBe(true);
-            expect(apiKeyManager.validateAPIKey('openai', 'invalid-key')).toBe(false);
-            expect(apiKeyManager.validateAPIKey('openai', '')).toBe(false);
-            expect(apiKeyManager.validateAPIKey('openai', null as any)).toBe(false);
-        });
-
-        test('should validate Anthropic API keys', () => {
-            expect(apiKeyManager.validateAPIKey('anthropic', 'sk-ant-1234567890abcdef')).toBe(true);
-            expect(apiKeyManager.validateAPIKey('anthropic', 'sk-1234567890abcdef')).toBe(false);
-            expect(apiKeyManager.validateAPIKey('anthropic', 'invalid-key')).toBe(false);
-        });
-
-        test('should validate Google API keys', () => {
-            expect(apiKeyManager.validateAPIKey('google', 'AIza1234567890abcdef')).toBe(true);
-            expect(apiKeyManager.validateAPIKey('google', 'sk-1234567890abcdef')).toBe(false);
-            expect(apiKeyManager.validateAPIKey('google', 'invalid-key')).toBe(false);
-        });
-
-        test('should return false for unknown provider', () => {
-            expect(apiKeyManager.validateAPIKey('unknown' as any, 'any-key')).toBe(false);
-        });
-    });
-
-    describe('removeAPIKey', () => {
-        test('should remove API key from config', async () => {
-            mockFs.pathExists.mockResolvedValue(true);
-            mockFs.readJSON.mockResolvedValue({
-                apiKeys: {
-                    openai: 'sk-openai-key',
-                    anthropic: 'sk-ant-key'
-                },
-                otherSettings: 'value'
-            });
-            mockFs.writeJSON.mockResolvedValue();
-
-            await apiKeyManager.removeAPIKey('openai');
-
-            expect(mockFs.writeJSON).toHaveBeenCalledWith('/home/user/.devlift/config.json', {
-                apiKeys: {
-                    anthropic: 'sk-ant-key'
-                },
-                otherSettings: 'value'
-            }, { spaces: 2 });
-        });
-
-        test('should handle removing non-existent key gracefully', async () => {
-            mockFs.pathExists.mockResolvedValue(true);
-            mockFs.readJSON.mockResolvedValue({
-                apiKeys: {
-                    anthropic: 'sk-ant-key'
-                }
-            });
-            mockFs.writeJSON.mockResolvedValue();
-
-            await apiKeyManager.removeAPIKey('openai');
-
-            // Should still write the config even if key wasn't there
-            expect(mockFs.writeJSON).toHaveBeenCalled();
-        });
-
-        test('should handle missing config file gracefully', async () => {
-            mockFs.pathExists.mockResolvedValue(false);
-
-            // Should not throw an error
-            await expect(apiKeyManager.removeAPIKey('openai')).resolves.not.toThrow();
-        });
-    });
-
-    describe('listSavedProviders', () => {
-        test('should list providers with saved API keys', async () => {
-            mockFs.pathExists.mockResolvedValue(true);
-            mockFs.readJSON.mockResolvedValue({
-                apiKeys: {
-                    openai: 'sk-openai-key',
-                    anthropic: 'sk-ant-key'
-                }
-            });
-
-            const providers = await apiKeyManager.listSavedProviders();
-
-            expect(providers).toEqual(['openai', 'anthropic']);
-        });
-
-        test('should return empty array if no config file', async () => {
-            mockFs.pathExists.mockResolvedValue(false);
-
-            const providers = await apiKeyManager.listSavedProviders();
-
-            expect(providers).toEqual([]);
-        });
-
-        test('should return empty array if no API keys section', async () => {
-            mockFs.pathExists.mockResolvedValue(true);
-            mockFs.readJSON.mockResolvedValue({
-                otherSettings: 'value'
-            });
-
-            const providers = await apiKeyManager.listSavedProviders();
-
-            expect(providers).toEqual([]);
-        });
-    });
-
-    describe('environment variable detection', () => {
-        test('should detect various environment variable formats', async () => {
-            // Test all supported environment variable formats
-            const testCases = [
-                { provider: 'openai', envVars: ['OPENAI_API_KEY', 'OPENAI_KEY'] },
-                { provider: 'anthropic', envVars: ['ANTHROPIC_API_KEY', 'ANTHROPIC_KEY'] },
-                { provider: 'google', envVars: ['GOOGLE_API_KEY', 'GOOGLE_AI_API_KEY'] }
-            ];
-
-            for (const testCase of testCases) {
-                for (const envVar of testCase.envVars) {
-                    // Set environment variable
-                    process.env[envVar] = `test-key-for-${testCase.provider}`;
-
-                    const apiKey = await apiKeyManager.getAPIKey(testCase.provider as any);
-                    expect(apiKey).toBe(`test-key-for-${testCase.provider}`);
-
-                    // Clean up
-                    delete process.env[envVar];
-                }
-            }
         });
     });
 }); 

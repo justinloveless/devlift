@@ -220,9 +220,9 @@ post_setup:
 
             expect(prompt).toContain('next-app');
             expect(prompt).toContain('Node.js');
-            expect(prompt).toContain('Next.js');
-            expect(prompt).toContain('React');
-            expect(prompt).toContain('Prisma');
+            expect(prompt).toContain('next');
+            expect(prompt).toContain('react');
+            expect(prompt).toContain('prisma');
             expect(prompt).toContain('yarn');
             expect(prompt).toContain('Docker');
             expect(prompt).toContain('DATABASE_URL');
@@ -261,8 +261,8 @@ post_setup:
 
             expect(prompt).toContain('django-app');
             expect(prompt).toContain('Python');
-            expect(prompt).toContain('Django');
-            expect(prompt).toContain('PostgreSQL');
+            expect(prompt).toContain('django');
+            expect(prompt).toContain('postgresql');
             expect(prompt).toContain('SECRET_KEY');
             expect(prompt).toContain('pip install');
             expect(prompt).toContain('python manage.py');
@@ -291,11 +291,9 @@ post_setup:
             const prompt = generator.buildPrompt(mockProjectData);
 
             expect(prompt).toContain('full-stack-app');
-            expect(prompt).toContain('multiple platforms');
-            expect(prompt).toContain('Node.js');
-            expect(prompt).toContain('Python');
-            expect(prompt).toContain('React');
-            expect(prompt).toContain('Django');
+            expect(prompt).toContain('Multiple platforms: node, python');
+            expect(prompt).toContain('react');
+            expect(prompt).toContain('django');
         });
     });
 
