@@ -24,7 +24,9 @@ jest.unstable_mockModule('simple-git', () => ({
 }));
 
 jest.unstable_mockModule('../../src/utils/validation.js', () => ({
-    getInputType: mockGetInputType
+    getInputType: mockGetInputType,
+    isValidGitUrl: jest.fn().mockReturnValue(true),
+    isValidLocalPath: jest.fn().mockReturnValue(true)
 }));
 
 jest.unstable_mockModule('path', () => ({

@@ -43,7 +43,7 @@ export class AIConfigGenerator {
         try {
             const prompt = this.buildPrompt(projectData);
             const aiResponse = await aiProvider.generateResponse(prompt);
-            const parsedConfig = this.parseAIResponse(aiResponse);
+            const parsedConfig = this.parseAIResponse(aiResponse, projectData);
             this.validateGeneratedConfig(parsedConfig);
 
             return parsedConfig;
@@ -109,6 +109,71 @@ Please generate a dev.yml configuration that includes:
 
 ## Output Format
 
+Please respond with ONLY the YAML configuration. The configuration MUST include these required fields:
+
+- \`project_name\`: Use "${projectName || 'My Project'}" or derive from the project information
+- \`version\`: Must be "1"
+
+Available step types:
+- \`package-manager\`: For npm/yarn/pnpm commands
+  * Use "install" for installing dependencies
+  * Use "run build" for build scripts
+  * Use "run test" for test scripts  
+  * Use "run dev" for development scripts
+  * Use "run start" for start scripts
+- \`shell\`: For general shell commands
+- \`docker-compose\`: For Docker Compose operations (command: "up -d", "down", etc.)
+- \`docker\`: For Docker commands (command: "build -t myapp .", "run", etc.)
+- \`database\`: For database-specific operations (migrations, seeding, etc.)
+- \`service\`: For service management (starting/stopping services)
+
+Example structure:
+\`\`\`yaml
+project_name: "${projectName || 'My Project'}"
+version: "1"
+dependencies:
+  - name: "shared-service"
+    repository: "https://github.com/org/shared-service.git"
+    branch: "main"
+  - name: "auth-service"
+    repository: "https://github.com/org/auth-service.git"
+    tag: "v1.2.0"
+  - name: "local-lib"
+    path: "../local-library"
+environment:
+  example_file: ".env.example"
+  variables:
+    - name: "DATABASE_URL"
+      prompt: "Enter database connection string"
+      default: "postgresql://localhost:5432/mydb"
+setup_steps:
+  - name: "Install Dependencies"
+    type: "package-manager"
+    command: "install"
+  - name: "Start Services"
+    type: "docker-compose"
+    command: "up -d"
+    depends_on: ["Install Dependencies"]
+  - name: "Build Project"
+    type: "package-manager"
+    command: "run build"
+    depends_on: ["Start Services"]
+  - name: "Setup Database"
+    type: "database"
+    command: "npm run db:migrate"
+    depends_on: ["Build Project"]
+post_setup:
+  - type: "message"
+    content: "Setup complete! Run 'npm run dev' to start development."
+\`\`\`
+
+**Dependencies section (optional):**
+- \`name\`: Human-readable name for the dependency
+- \`repository\`: Git repository URL for remote dependencies
+- \`branch\`: Specific branch to checkout (optional)
+- \`tag\`: Specific tag to checkout (optional)
+- \`path\`: Relative path for local dependencies (alternative to repository)
+
 Please respond with ONLY the YAML configuration (no markdown code blocks or additional text):
 
 `;
@@ -119,7 +184,7 @@ Please respond with ONLY the YAML configuration (no markdown code blocks or addi
     /**
      * Parse AI response and extract YAML configuration
      */
-    parseAIResponse(response: string): DevYmlConfig {
+    parseAIResponse(response: string, projectData?: ProjectAnalysisResult): DevYmlConfig {
         try {
             // Try to extract YAML from markdown code blocks if present
             let yamlContent = response;
@@ -137,6 +202,15 @@ Please respond with ONLY the YAML configuration (no markdown code blocks or addi
 
             if (!parsed || typeof parsed !== 'object') {
                 throw new Error('Parsed YAML is not a valid object');
+            }
+
+            // Ensure required fields are present with fallbacks
+            if (!parsed.project_name) {
+                parsed.project_name = projectData?.projectName || 'My Project';
+            }
+
+            if (!parsed.version) {
+                parsed.version = '1';
             }
 
             return parsed;
@@ -184,19 +258,14 @@ Please respond with ONLY the YAML configuration (no markdown code blocks or addi
                 }
 
                 // Validate step types
-                const validTypes = ['package-manager', 'shell'];
+                const validTypes = ['package-manager', 'shell', 'docker-compose', 'docker', 'database', 'service'];
                 if (!validTypes.includes(step.type)) {
                     throw new Error(`Invalid setup step type: ${step.type}. Valid types: ${validTypes.join(', ')}`);
                 }
 
-                // Validate package-manager steps
-                if (step.type === 'package-manager' && !step.command) {
-                    throw new Error('Package-manager step is missing required field: command');
-                }
-
-                // Validate shell steps
-                if (step.type === 'shell' && !step.command) {
-                    throw new Error('Shell step is missing required field: command');
+                // Validate that all step types have a command
+                if (!step.command) {
+                    throw new Error(`${step.type} step is missing required field: command`);
                 }
             }
         }

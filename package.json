@@ -1,6 +1,6 @@
 {
   "name": "devlift",
-  "version": "1.0.13",
+  "version": "1.1.0",
   "description": "Universal CLI tool for automating repository setup and development environment configuration",
   "main": "dist/index.js",
   "type": "module",
@@ -23,6 +23,11 @@
     "release:dry-run": "node scripts/publish-with-bump.js --dry-run",
     "release:prepare": "node scripts/release-prepare.js",
     "release:prepare:dry-run": "node scripts/release-prepare.js --dry-run",
+    "beta:prepare": "node scripts/beta-release-prepare.js",
+    "beta:prepare:dry-run": "node scripts/beta-release-prepare.js --dry-run",
+    "beta:bump": "node scripts/bump-version.js --beta",
+    "beta:publish": "npm publish --tag beta",
+    "beta:promote": "node scripts/promote-beta.js",
     "setup:github-actions": "node scripts/setup-github-actions.js"
   },
   "keywords": [
