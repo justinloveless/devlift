@@ -275,4 +275,179 @@ describe('ExecutionEngine', () => {
             shell: true
         });
     });
+
+    describe('post_setup actions', () => {
+        it('should execute post_setup message actions', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+
+            const config = {
+                setup_steps: [],
+                post_setup: [
+                    { type: 'message' as const, content: 'Setup complete!' },
+                    { type: 'message' as const, content: 'Ready to develop!' }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await engine.run();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🎉 Running post-setup actions...'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('📝 Setup complete!'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('📝 Ready to develop!'));
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should execute post_setup open editor actions', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+            mockExeca.mockResolvedValue({});
+
+            const config = {
+                setup_steps: [],
+                post_setup: [
+                    { type: 'open' as const, target: 'editor', path: '.' }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await engine.run();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('📂 Opening'));
+            expect(mockExeca).toHaveBeenCalledWith('code', [expect.any(String)], { cwd: '/test/dir' });
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should execute post_setup open browser actions', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+            mockExeca.mockResolvedValue({});
+
+            const config = {
+                setup_steps: [],
+                post_setup: [
+                    { type: 'open' as const, target: 'browser', path: 'http://localhost:3000' }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await engine.run();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🌐 Opening http://localhost:3000 in browser...'));
+            expect(mockExeca).toHaveBeenCalledWith(expect.any(String), ['http://localhost:3000'], {
+                cwd: '/test/dir',
+                shell: true
+            });
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle post_setup actions even when no setup steps exist', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+            const config = {
+                post_setup: [
+                    { type: 'message' as const, content: 'No setup needed, but here is a message!' }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await engine.run();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🎉 Running post-setup actions...'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('📝 No setup needed, but here is a message!'));
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle unknown post_setup action types', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+            const config = {
+                setup_steps: [],
+                post_setup: [
+                    { type: 'unknown-action' as any, content: 'This should be skipped' }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await engine.run();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🎉 Running post-setup actions...'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown post-setup action type: unknown-action'));
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should execute both setup steps and post_setup actions', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+            mockInquirerPrompt.mockResolvedValue({ proceed: true });
+            mockExeca.mockResolvedValue({});
+
+            const config = {
+                setup_steps: [
+                    { name: 'Install deps', type: 'shell' as const, command: 'npm install' }
+                ],
+                post_setup: [
+                    { type: 'message' as const, content: 'All done!' }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await engine.run();
+
+            // Should execute setup step
+            expect(mockInquirerPrompt).toHaveBeenCalled();
+            expect(mockExeca).toHaveBeenCalledWith('npm install', {
+                cwd: '/test/dir',
+                stdio: 'inherit',
+                shell: true
+            });
+
+            // Should also execute post-setup
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🎉 Running post-setup actions...'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('📝 All done!'));
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle editor fallback when VS Code is not available', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+            mockExeca
+                .mockRejectedValueOnce(new Error('code command not found'))
+                .mockRejectedValueOnce(new Error('subl command not found'));
+
+            const config = {
+                setup_steps: [],
+                post_setup: [
+                    { type: 'open' as const, target: 'editor', path: '.' }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await engine.run();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Could not open editor automatically'));
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle browser fallback when browser command fails', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+            mockExeca.mockRejectedValueOnce(new Error('browser command failed'));
+
+            const config = {
+                setup_steps: [],
+                post_setup: [
+                    { type: 'open', target: 'browser', path: 'http://localhost:3000' }
+                ]
+            };
+            const engine = new ExecutionEngine(config, '/test/dir');
+
+            await engine.run();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Could not open browser automatically'));
+
+            consoleSpy.mockRestore();
+        });
+    });
 }); 

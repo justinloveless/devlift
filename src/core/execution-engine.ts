@@ -28,34 +28,40 @@ export class ExecutionEngine {
         // Handle both 'setup' and 'setup_steps' for backward compatibility
         const steps = (this.config as any).setup || this.config.setup_steps;
 
-        if (!steps) {
-            return;
+        if (steps) {
+            const sortedSteps = this.#topologicalSort(steps);
+
+            for (const step of sortedSteps) {
+                switch (step.type) {
+                    case 'shell':
+                        await this.#handleShellStep(step);
+                        break;
+                    case 'package-manager':
+                        await this.#handlePackageManagerStep(step);
+                        break;
+                    case 'docker-compose':
+                        await this.#handleDockerComposeStep(step);
+                        break;
+                    case 'docker':
+                        await this.#handleDockerStep(step);
+                        break;
+                    case 'database':
+                        await this.#handleDatabaseStep(step);
+                        break;
+                    case 'service':
+                        await this.#handleServiceStep(step);
+                        break;
+                    default:
+                        this.#log(`Unknown step type: ${step.type}`, 'yellow');
+                }
+            }
         }
 
-        const sortedSteps = this.#topologicalSort(steps);
-
-        for (const step of sortedSteps) {
-            switch (step.type) {
-                case 'shell':
-                    await this.#handleShellStep(step);
-                    break;
-                case 'package-manager':
-                    await this.#handlePackageManagerStep(step);
-                    break;
-                case 'docker-compose':
-                    await this.#handleDockerComposeStep(step);
-                    break;
-                case 'docker':
-                    await this.#handleDockerStep(step);
-                    break;
-                case 'database':
-                    await this.#handleDatabaseStep(step);
-                    break;
-                case 'service':
-                    await this.#handleServiceStep(step);
-                    break;
-                default:
-                    this.#log(`Unknown step type: ${step.type}`, 'yellow');
+        // Handle post-setup actions
+        if (this.config.post_setup) {
+            this.#log('\n🎉 Running post-setup actions...', 'green');
+            for (const action of this.config.post_setup) {
+                await this.#handlePostSetupAction(action);
             }
         }
     }
@@ -261,6 +267,47 @@ export class ExecutionEngine {
             });
         } else {
             this.#log('Skipped.', 'yellow');
+        }
+    }
+
+    async #handlePostSetupAction(action: any): Promise<void> {
+        switch (action.type) {
+            case 'message':
+                if (action.content) {
+                    this.#log(`\n📝 ${action.content}`, 'green');
+                }
+                break;
+            case 'open':
+                if (action.target === 'editor') {
+                    const targetPath = action.path || '.';
+                    const fullPath = path.resolve(this.directory, targetPath);
+                    this.#log(`\n📂 Opening ${fullPath} in editor...`, 'blue');
+
+                    try {
+                        // Try to open with common editors
+                        await execa('code', [fullPath], { cwd: this.directory });
+                    } catch {
+                        try {
+                            await execa('subl', [fullPath], { cwd: this.directory });
+                        } catch {
+                            this.#log('Could not open editor automatically. Please open the project manually.', 'yellow');
+                        }
+                    }
+                } else if (action.target === 'browser') {
+                    const url = action.path || 'http://localhost:3000';
+                    this.#log(`\n🌐 Opening ${url} in browser...`, 'blue');
+
+                    try {
+                        const command = process.platform === 'win32' ? 'start' :
+                            process.platform === 'darwin' ? 'open' : 'xdg-open';
+                        await execa(command, [url], { cwd: this.directory, shell: true });
+                    } catch {
+                        this.#log(`Could not open browser automatically. Please visit ${url} manually.`, 'yellow');
+                    }
+                }
+                break;
+            default:
+                this.#log(`Unknown post-setup action type: ${action.type}`, 'yellow');
         }
     }
 } 

@@ -19,12 +19,20 @@ interface ProjectDependency {
     path?: string;  // For local dependencies
 }
 
+interface PostSetupAction {
+    type: 'message' | 'open';
+    content?: string;
+    target?: string;
+    path?: string;
+}
+
 export interface Config {
     project_name?: string;
     setup_steps?: SetupStep[];
     setup?: SetupStep[];  // For backward compatibility with tests
     version?: string;
     dependencies?: ProjectDependency[];
+    post_setup?: PostSetupAction[];
 }
 
 /**
