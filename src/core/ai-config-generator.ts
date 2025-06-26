@@ -43,7 +43,7 @@ export class AIConfigGenerator {
         try {
             const prompt = this.buildPrompt(projectData);
             const aiResponse = await aiProvider.generateResponse(prompt);
-            const parsedConfig = this.parseAIResponse(aiResponse);
+            const parsedConfig = this.parseAIResponse(aiResponse, projectData);
             this.validateGeneratedConfig(parsedConfig);
 
             return parsedConfig;
@@ -109,6 +109,34 @@ Please generate a dev.yml configuration that includes:
 
 ## Output Format
 
+Please respond with ONLY the YAML configuration. The configuration MUST include these required fields:
+
+- \`project_name\`: Use "${projectName || 'My Project'}" or derive from the project information
+- \`version\`: Must be "1"
+
+Example structure:
+\`\`\`yaml
+project_name: "${projectName || 'My Project'}"
+version: "1"
+environment:
+  example_file: ".env.example"
+  variables:
+    - name: "DATABASE_URL"
+      prompt: "Enter database connection string"
+      default: "postgresql://localhost:5432/mydb"
+setup_steps:
+  - name: "Install Dependencies"
+    type: "package-manager"
+    command: "install"
+  - name: "Setup Database"
+    type: "shell"
+    command: "npm run db:setup"
+    depends_on: ["Install Dependencies"]
+post_setup:
+  - type: "message"
+    content: "Setup complete! Run 'npm run dev' to start development."
+\`\`\`
+
 Please respond with ONLY the YAML configuration (no markdown code blocks or additional text):
 
 `;
@@ -119,7 +147,7 @@ Please respond with ONLY the YAML configuration (no markdown code blocks or addi
     /**
      * Parse AI response and extract YAML configuration
      */
-    parseAIResponse(response: string): DevYmlConfig {
+    parseAIResponse(response: string, projectData?: ProjectAnalysisResult): DevYmlConfig {
         try {
             // Try to extract YAML from markdown code blocks if present
             let yamlContent = response;
@@ -137,6 +165,15 @@ Please respond with ONLY the YAML configuration (no markdown code blocks or addi
 
             if (!parsed || typeof parsed !== 'object') {
                 throw new Error('Parsed YAML is not a valid object');
+            }
+
+            // Ensure required fields are present with fallbacks
+            if (!parsed.project_name) {
+                parsed.project_name = projectData?.projectName || 'My Project';
+            }
+
+            if (!parsed.version) {
+                parsed.version = '1';
             }
 
             return parsed;
