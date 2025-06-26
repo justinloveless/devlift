@@ -4,6 +4,7 @@ import { getInputType } from '../utils/validation.js';
 import { getClonePath } from '../utils/path.js';
 import { loadConfig, Config } from '../core/config.js';
 import { ExecutionEngine } from '../core/execution-engine.js';
+import { DependencyResolver } from '../core/dependency-resolver.js';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import fs from 'fs-extra';
@@ -79,8 +80,29 @@ const lift = new Command('lift')
                 }
             }
 
-            // 4. Run execution engine
+            // 4. Resolve dependencies first
             console.log(chalk.blue('Configuration found. Starting setup...'));
+            const dependencyResolver = new DependencyResolver();
+            const resolvedDependencies = await dependencyResolver.resolveDependencies(config, workingPath);
+
+            // 5. Set up dependencies first
+            if (resolvedDependencies.length > 0) {
+                console.log(chalk.blue(`🔧 Setting up ${resolvedDependencies.length} dependencies...`));
+                for (const dependency of resolvedDependencies) {
+                    if (dependency.config) {
+                        console.log(chalk.cyan(`⚙️  Setting up dependency: ${dependency.name}`));
+                        const depEngine = new ExecutionEngine(dependency.config, dependency.path);
+                        await depEngine.run();
+                        console.log(chalk.green(`✅ Dependency setup complete: ${dependency.name}`));
+                    } else {
+                        console.log(chalk.yellow(`⚠️  No dev.yml found for dependency: ${dependency.name}`));
+                    }
+                }
+                console.log(chalk.green('🎉 All dependencies set up successfully!'));
+            }
+
+            // 6. Run execution engine for main project
+            console.log(chalk.blue('🚀 Setting up main project...'));
             const engine = new ExecutionEngine(config, workingPath);
             await engine.run();
 

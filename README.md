@@ -259,6 +259,17 @@ The `dev.yml` file is the heart of the tool. It defines all the steps required t
 project_name: "My Awesome Web App"
 version: "1"
 
+# Project dependencies (optional)
+dependencies:
+  - name: "shared-service"
+    repository: "https://github.com/org/shared-service.git"
+    branch: "main"
+  - name: "auth-service"
+    repository: "https://github.com/org/auth-service.git"
+    tag: "v1.2.0"
+  - name: "local-library"
+    path: "../local-lib"
+
 # Environment variable configuration
 environment:
   example_file: ".env.example"  # Copy this file to .env
@@ -277,14 +288,14 @@ setup_steps:
     manager: "npm"  # Auto-detected if not specified
     command: "install"
     
-  - name: "Start Database"
-    type: "shell"
-    command: "docker-compose up -d db"
+  - name: "Start Services"
+    type: "docker-compose"
+    command: "up -d"
     
   - name: "Run Migrations"
-    type: "shell"
+    type: "database"
     command: "npm run db:migrate"
-    depends_on: ["Start Database"]  # Ensures proper ordering
+    depends_on: ["Start Services"]  # Ensures proper ordering
 
 # Post-setup actions
 post_setup:
@@ -302,9 +313,24 @@ post_setup:
     path: "."
 ```
 
+**Project Dependencies:**
+DevLift supports multi-repository project dependencies. When you run `dev lift` on a project, it will automatically resolve and set up all declared dependencies first.
+
+- **`name`**: Human-readable name for the dependency  
+- **`repository`**: Git repository URL for remote dependencies
+- **`branch`**: Specific branch to checkout (optional, defaults to main)
+- **`tag`**: Specific tag to checkout (optional, takes precedence over branch)
+- **`path`**: Relative path for local dependencies (alternative to repository)
+
+Dependencies are resolved recursively with circular dependency detection.
+
 **Step Types:**
 - **`package-manager`**: Automatically detects and runs package manager commands (npm, yarn, pnpm, pip, etc.)
 - **`shell`**: Executes shell commands with user confirmation for security
+- **`docker-compose`**: Docker Compose operations (up, down, build, etc.)
+- **`docker`**: Docker commands (build, run, pull, etc.)
+- **`database`**: Database operations (migrations, seeding, etc.)
+- **`service`**: Service management commands (start/stop services)
 
 **Supported Package Managers:**
 - Node.js: npm, yarn, pnpm, bun

@@ -7,10 +7,12 @@ import { Config } from './config.js';
 
 interface SetupStep {
     name: string;
-    type: 'shell' | 'package-manager';
+    type: 'shell' | 'package-manager' | 'docker-compose' | 'docker' | 'database' | 'service';
     command: string;
     depends_on?: string[];
     manager?: string;
+    service?: string;
+    file?: string;
 }
 
 export class ExecutionEngine {
@@ -33,10 +35,27 @@ export class ExecutionEngine {
         const sortedSteps = this.#topologicalSort(steps);
 
         for (const step of sortedSteps) {
-            if (step.type === 'shell') {
-                await this.#handleShellStep(step);
-            } else if (step.type === 'package-manager') {
-                await this.#handlePackageManagerStep(step);
+            switch (step.type) {
+                case 'shell':
+                    await this.#handleShellStep(step);
+                    break;
+                case 'package-manager':
+                    await this.#handlePackageManagerStep(step);
+                    break;
+                case 'docker-compose':
+                    await this.#handleDockerComposeStep(step);
+                    break;
+                case 'docker':
+                    await this.#handleDockerStep(step);
+                    break;
+                case 'database':
+                    await this.#handleDatabaseStep(step);
+                    break;
+                case 'service':
+                    await this.#handleServiceStep(step);
+                    break;
+                default:
+                    this.#log(`Unknown step type: ${step.type}`, 'yellow');
             }
         }
     }
@@ -132,6 +151,104 @@ export class ExecutionEngine {
                 type: 'confirm',
                 name: 'proceed',
                 message: `Execute the following command?\n  ${step.command}`,
+                default: true,
+            },
+        ]);
+
+        if (proceed) {
+            await execa(step.command, {
+                cwd: this.directory,
+                stdio: 'inherit',
+                shell: true,
+            });
+        } else {
+            this.#log('Skipped.', 'yellow');
+        }
+    }
+
+    async #handleDockerComposeStep(step: SetupStep): Promise<void> {
+        this.#log(`\nRunning Docker Compose: ${step.name}`);
+
+        // Check if docker-compose.yml exists
+        const composeFile = step.file || 'docker-compose.yml';
+        const composePath = path.join(this.directory, composeFile);
+
+        if (!fs.pathExistsSync(composePath)) {
+            this.#log(`Warning: ${composeFile} not found`, 'yellow');
+        }
+
+        const { proceed } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'proceed',
+                message: `Execute Docker Compose command?\n  docker compose ${step.command}`,
+                default: true,
+            },
+        ]);
+
+        if (proceed) {
+            await execa('docker', ['compose', ...step.command.split(' ')], {
+                cwd: this.directory,
+                stdio: 'inherit',
+            });
+        } else {
+            this.#log('Skipped.', 'yellow');
+        }
+    }
+
+    async #handleDockerStep(step: SetupStep): Promise<void> {
+        this.#log(`\nRunning Docker command: ${step.name}`);
+
+        const { proceed } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'proceed',
+                message: `Execute Docker command?\n  docker ${step.command}`,
+                default: true,
+            },
+        ]);
+
+        if (proceed) {
+            await execa('docker', step.command.split(' '), {
+                cwd: this.directory,
+                stdio: 'inherit',
+            });
+        } else {
+            this.#log('Skipped.', 'yellow');
+        }
+    }
+
+    async #handleDatabaseStep(step: SetupStep): Promise<void> {
+        this.#log(`\nRunning database command: ${step.name}`);
+
+        const { proceed } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'proceed',
+                message: `Execute database command?\n  ${step.command}`,
+                default: true,
+            },
+        ]);
+
+        if (proceed) {
+            await execa(step.command, {
+                cwd: this.directory,
+                stdio: 'inherit',
+                shell: true,
+            });
+        } else {
+            this.#log('Skipped.', 'yellow');
+        }
+    }
+
+    async #handleServiceStep(step: SetupStep): Promise<void> {
+        this.#log(`\nManaging service: ${step.name}`);
+
+        const { proceed } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'proceed',
+                message: `Execute service command?\n  ${step.command}`,
                 default: true,
             },
         ]);

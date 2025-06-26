@@ -1,7 +1,14 @@
 import { Config } from './config.js';
 
 const SUPPORTED_VERSION = '1';
-const VALID_STEP_TYPES = ['package-manager', 'shell'];
+const VALID_STEP_TYPES = [
+    'package-manager',
+    'shell',
+    'docker-compose',
+    'docker',
+    'database',
+    'service'
+];
 const REQUIRED_STEP_FIELDS = ['name', 'type'];
 
 export function validateConfig(config: Config): void {
