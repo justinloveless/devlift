@@ -17,6 +17,12 @@ Install `devlift` globally via npm:
 npm install -g devlift
 ```
 
+Verify the installation:
+
+```bash
+dev --version
+```
+
 This will make the `dev` command available in your terminal, allowing you to `lift` any repository that has a `dev.yml` file.
 
 ## Core Commands
@@ -58,7 +64,11 @@ dev prep --ai --provider openai     # Use OpenAI GPT-4
 dev prep --ai --provider anthropic  # Use Anthropic Claude  
 dev prep --ai --provider google     # Use Google Gemini
 
-# Force overwrite existing dev.yml
+# Choose output format
+dev prep --ai --format json         # Generate JSON with IntelliSense
+dev prep --ai --format yaml         # Generate YAML (default)
+
+# Force overwrite existing configuration
 dev prep --ai --force
 ```
 
@@ -66,6 +76,18 @@ dev prep --ai --force
 ```bash
 # Force manual mode (skip AI option)
 dev prep --interactive
+
+# Generate specific format
+dev prep --interactive --format json
+dev prep --interactive --format yaml
+```
+
+**Format Options:**
+```bash
+dev prep --format json              # JSON format with IntelliSense support
+dev prep --format yaml              # YAML format (default)
+dev prep --format json --schema     # Include schema reference (default)
+dev prep --format json --no-schema  # Exclude schema reference
 ```
 
 #### AI Provider Setup
@@ -98,9 +120,8 @@ The AI-powered prep feature analyzes your project comprehensively:
 - **Frameworks**: React, Vue, Django, Flask, Express, Next.js, etc.
 - **Databases**: PostgreSQL, MySQL, MongoDB, Redis, etc.
 - **Environment Variables**: From .env files and documentation
-- **Build Tools**: Webpack, Vite, Makefile, etc.
+- **Build Tools**: Webpack, Vite, Rollup, etc.
 - **CI/CD**: GitHub Actions, GitLab CI, etc.
-- **Documentation**: README.md, setup guides, etc.
 
 The AI generates a complete `dev.yml` with:
 - ✅ Proper setup step ordering with dependencies

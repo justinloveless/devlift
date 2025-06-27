@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/justinloveless/devlift/main/schema/dev-config.schema.json
+project_name: "Basic Node.js Project"
+version: "1"
+
+environment:
+  example_file: ".env.example"
+  variables:
+    - name: "DATABASE_URL"
+      prompt: "Enter your database connection string:"
+      default: "postgresql://localhost:5432/myapp"
+    - name: "API_KEY"
+      prompt: "Enter your API key:"
+      secret: true
+    - name: "PORT"
+      prompt: "Enter the port number:"
+      default: "3000"
+
+setup_steps:
+  - name: "Install Dependencies"
+    type: "package-manager"
+    manager: "npm"
+    command: "install"
+  - name: "Start Services"
+    type: "docker-compose"
+    command: "up -d"
+  - name: "Run Database Migrations"
+    type: "shell"
+    command: "npm run db:migrate"
+    depends_on: ["Start Services"]
+  - name: "Build Project"
+    type: "package-manager"
+    manager: "npm"
+    command: "run build"
+    depends_on: ["Install Dependencies"]
+
+post_setup:
+  - type: "message"
+    content: |
+      🎉 Setup complete!
+
+      To start development:
+      $ npm run dev
+
+      Your app will be available at http://localhost:3000
+  - type: "open"
+    target: "editor"
+    path: "." 

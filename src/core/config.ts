@@ -36,23 +36,90 @@ export interface Config {
 }
 
 /**
- * Loads and parses the dev.yml configuration file from a given directory.
- * @param directory - The directory to search for the dev.yml file.
- * @returns The parsed configuration object, or null if the file doesn't exist.
+ * Configuration file detection result
+ */
+interface ConfigFileInfo {
+    path: string;
+    format: 'yaml' | 'json';
+}
+
+/**
+ * Finds the configuration file in the given directory.
+ * Checks for dev.yml, dev.yaml, and dev.json in that order.
+ * @param directory - The directory to search for configuration files.
+ * @returns ConfigFileInfo if found, null otherwise.
+ */
+function findConfigFile(directory: string): ConfigFileInfo | null {
+    // Priority order: YAML files first, then JSON
+    const configFiles = [
+        { name: 'dev.yml', format: 'yaml' as const },
+        { name: 'dev.yaml', format: 'yaml' as const },
+        { name: 'dev.json', format: 'json' as const }
+    ];
+
+    for (const { name, format } of configFiles) {
+        const configPath = path.join(directory, name);
+        if (fs.existsSync(configPath)) {
+            return { path: configPath, format };
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Loads and parses the dev configuration file from a given directory.
+ * Supports both YAML (.yml, .yaml) and JSON (.json) formats.
+ * @param directory - The directory to search for the configuration file.
+ * @returns The parsed configuration object, or null if no config file exists.
  */
 export function loadConfig(directory: string): Config | null {
-    const configPath = path.join(directory, 'dev.yml');
+    const configFile = findConfigFile(directory);
 
-    if (!fs.existsSync(configPath)) {
-        // In a real scenario, we might want to throw an error or handle this differently.
-        // For now, returning null for the test case.
+    if (!configFile) {
         return null;
     }
 
-    const fileContents = fs.readFileSync(configPath, 'utf8');
-    const config = yaml.load(fileContents) as Config;
+    const fileContents = fs.readFileSync(configFile.path, 'utf8');
+    let config: Config;
+
+    try {
+        if (configFile.format === 'yaml') {
+            config = yaml.load(fileContents) as Config;
+        } else {
+            config = JSON.parse(fileContents) as Config;
+        }
+    } catch (error) {
+        const formatName = configFile.format.toUpperCase();
+        throw new Error(`Failed to parse ${formatName} configuration file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    if (!config || typeof config !== 'object') {
+        throw new Error('Configuration file does not contain a valid object');
+    }
 
     validateConfig(config);
 
     return config;
+}
+
+/**
+ * Gets the list of supported configuration file names
+ */
+export function getSupportedConfigFiles(): string[] {
+    return ['dev.yml', 'dev.yaml', 'dev.json'];
+}
+
+/**
+ * Checks if a configuration file exists in the given directory
+ */
+export function configExists(directory: string): boolean {
+    return findConfigFile(directory) !== null;
+}
+
+/**
+ * Gets the path and format of the existing config file in a directory
+ */
+export function getConfigFileInfo(directory: string): ConfigFileInfo | null {
+    return findConfigFile(directory);
 } 
