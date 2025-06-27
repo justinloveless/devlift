@@ -276,6 +276,493 @@ describe('ExecutionEngine', () => {
         });
     });
 
+    describe('choice steps', () => {
+        it('should present choices and execute selected actions', async () => {
+            mockInquirerPrompt
+                .mockResolvedValueOnce({ choice: 'dev' }) // User selects dev option
+                .mockResolvedValueOnce({ proceed: true }); // User confirms shell command
+            mockExeca.mockResolvedValue({});
+
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Choose Development Mode',
+                        type: 'choice' as const,
+                        prompt: 'How would you like to run the application?',
+                        choices: [
+                            {
+                                name: 'Development mode',
+                                value: 'dev',
+                                actions: [
+                                    { name: 'Start dev server', type: 'shell' as const, command: 'npm run dev' }
+                                ]
+                            },
+                            {
+                                name: 'Production mode',
+                                value: 'prod',
+                                actions: [
+                                    { name: 'Build and start', type: 'shell' as const, command: 'npm run build && npm start' }
+                                ]
+                            },
+                            {
+                                name: 'Skip for now',
+                                value: 'skip',
+                                actions: []
+                            }
+                        ]
+                    }
+                ]
+            };
+            const engine = new ExecutionEngine(config, '/test/dir');
+
+            await engine.run();
+
+            // Should present the choice
+            expect(mockInquirerPrompt).toHaveBeenNthCalledWith(1, [{
+                type: 'list',
+                name: 'choice',
+                message: 'How would you like to run the application?',
+                choices: [
+                    { name: 'Development mode', value: 'dev' },
+                    { name: 'Production mode', value: 'prod' },
+                    { name: 'Skip for now', value: 'skip' }
+                ]
+            }]);
+
+            // Should execute the selected action
+            expect(mockInquirerPrompt).toHaveBeenNthCalledWith(2, [{
+                type: 'confirm',
+                name: 'proceed',
+                message: 'Execute the following command?\n  npm run dev',
+                default: true
+            }]);
+            expect(mockExeca).toHaveBeenCalledWith('npm run dev', {
+                cwd: '/test/dir',
+                stdio: 'inherit',
+                shell: true
+            });
+        });
+
+        it('should handle choice with no actions (skip option)', async () => {
+            mockInquirerPrompt.mockResolvedValueOnce({ choice: 'skip' });
+
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Choose Development Mode',
+                        type: 'choice' as const,
+                        prompt: 'How would you like to run the application?',
+                        choices: [
+                            {
+                                name: 'Development mode',
+                                value: 'dev',
+                                actions: [
+                                    { name: 'Start dev server', type: 'shell' as const, command: 'npm run dev' }
+                                ]
+                            },
+                            {
+                                name: 'Skip for now',
+                                value: 'skip',
+                                actions: []
+                            }
+                        ]
+                    }
+                ]
+            };
+            const engine = new ExecutionEngine(config, '/test/dir');
+
+            await engine.run();
+
+            // Should present the choice
+            expect(mockInquirerPrompt).toHaveBeenCalledTimes(1);
+            expect(mockInquirerPrompt).toHaveBeenCalledWith([{
+                type: 'list',
+                name: 'choice',
+                message: 'How would you like to run the application?',
+                choices: [
+                    { name: 'Development mode', value: 'dev' },
+                    { name: 'Skip for now', value: 'skip' }
+                ]
+            }]);
+
+            // Should not execute any commands
+            expect(mockExeca).not.toHaveBeenCalled();
+        });
+
+        it('should handle choice with multiple actions', async () => {
+            mockInquirerPrompt
+                .mockResolvedValueOnce({ choice: 'prod' })
+                .mockResolvedValueOnce({ proceed: true })
+                .mockResolvedValueOnce({ proceed: true });
+            mockExeca.mockResolvedValue({});
+
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Choose Development Mode',
+                        type: 'choice' as const,
+                        prompt: 'How would you like to run the application?',
+                        choices: [
+                            {
+                                name: 'Production mode',
+                                value: 'prod',
+                                actions: [
+                                    { name: 'Build app', type: 'shell' as const, command: 'npm run build' },
+                                    { name: 'Start app', type: 'shell' as const, command: 'npm start' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+            const engine = new ExecutionEngine(config, '/test/dir');
+
+            await engine.run();
+
+            // Should execute both actions in sequence
+            expect(mockExeca).toHaveBeenCalledTimes(2);
+            expect(mockExeca).toHaveBeenNthCalledWith(1, 'npm run build', {
+                cwd: '/test/dir',
+                stdio: 'inherit',
+                shell: true
+            });
+            expect(mockExeca).toHaveBeenNthCalledWith(2, 'npm start', {
+                cwd: '/test/dir',
+                stdio: 'inherit',
+                shell: true
+            });
+        });
+
+        it('should handle choice with package-manager actions', async () => {
+            mockInquirerPrompt.mockResolvedValueOnce({ choice: 'install' });
+            mockExeca.mockResolvedValue({});
+            mockPathExistsSync.mockReturnValue(false); // No lock files
+
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Choose Installation Method',
+                        type: 'choice' as const,
+                        prompt: 'How would you like to install dependencies?',
+                        choices: [
+                            {
+                                name: 'Install with npm',
+                                value: 'install',
+                                actions: [
+                                    { name: 'Install deps', type: 'package-manager' as const, command: 'install', manager: 'npm' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+            const engine = new ExecutionEngine(config, '/test/dir');
+
+            await engine.run();
+
+            expect(mockExeca).toHaveBeenCalledWith('npm install', {
+                cwd: '/test/dir',
+                stdio: 'inherit'
+            });
+        });
+
+        it('should handle choice steps with depends_on', async () => {
+            mockInquirerPrompt
+                .mockResolvedValueOnce({ proceed: true }) // First step
+                .mockResolvedValueOnce({ choice: 'dev' })  // Choice step
+                .mockResolvedValueOnce({ proceed: true }); // Choice action
+            mockExeca.mockResolvedValue({});
+
+            const config = {
+                setup_steps: [
+                    { name: 'Install deps', type: 'shell' as const, command: 'npm install' },
+                    {
+                        name: 'Choose Development Mode',
+                        type: 'choice' as const,
+                        prompt: 'How would you like to run the application?',
+                        depends_on: ['Install deps'],
+                        choices: [
+                            {
+                                name: 'Development mode',
+                                value: 'dev',
+                                actions: [
+                                    { name: 'Start dev server', type: 'shell' as const, command: 'npm run dev' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+            const engine = new ExecutionEngine(config, '/test/dir');
+
+            await engine.run();
+
+            // Should execute install first, then choice
+            const calls = mockExeca.mock.calls;
+            expect(calls[0][0]).toBe('npm install');
+            expect(calls[1][0]).toBe('npm run dev');
+        });
+
+        it('should throw error for choice step without prompt', async () => {
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Invalid Choice',
+                        type: 'choice' as const,
+                        // Missing prompt
+                        choices: [
+                            { name: 'Option 1', value: 'opt1', actions: [] }
+                        ]
+                    }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await expect(engine.run()).rejects.toThrow();
+        });
+
+        it('should throw error for choice step without choices', async () => {
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Invalid Choice',
+                        type: 'choice' as const,
+                        prompt: 'Choose an option',
+                        // Missing choices
+                    }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await expect(engine.run()).rejects.toThrow();
+        });
+
+        it('should throw error for choice step with empty choices array', async () => {
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Invalid Choice',
+                        type: 'choice' as const,
+                        prompt: 'Choose an option',
+                        choices: []
+                    }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await expect(engine.run()).rejects.toThrow();
+        });
+
+        it('should use pre-specified choice when provided', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+            mockInquirerPrompt.mockResolvedValue({ proceed: true });
+            mockExeca.mockResolvedValue({});
+
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Choose Test Mode',
+                        type: 'choice' as const,
+                        prompt: 'Which test would you like to run?',
+                        choices: [
+                            {
+                                name: 'Quick test',
+                                value: 'quick',
+                                actions: [
+                                    { name: 'Run quick test', type: 'shell' as const, command: 'npm run test:quick' }
+                                ]
+                            },
+                            {
+                                name: 'Full test',
+                                value: 'full',
+                                actions: [
+                                    { name: 'Run full test', type: 'shell' as const, command: 'npm run test:full' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            const prespecifiedChoices = new Map([['Choose Test Mode', 'quick']]);
+            const engine = new ExecutionEngine(config, '/test/dir', prespecifiedChoices);
+
+            await engine.run();
+
+            // Should not prompt user for choice selection
+            expect(mockInquirerPrompt).toHaveBeenCalledTimes(1); // Only for shell command confirmation
+            expect(mockInquirerPrompt).toHaveBeenCalledWith([{
+                type: 'confirm',
+                name: 'proceed',
+                message: 'Execute the following command?\n  npm run test:quick',
+                default: true
+            }]);
+
+            // Should log that pre-specified choice was used
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🎯 Using pre-specified choice: Quick test'));
+
+            // Should execute the correct action
+            expect(mockExeca).toHaveBeenCalledWith('npm run test:quick', {
+                cwd: '/test/dir',
+                stdio: 'inherit',
+                shell: true
+            });
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should throw error for invalid pre-specified choice during upfront validation', async () => {
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Choose Test Mode',
+                        type: 'choice' as const,
+                        prompt: 'Which test would you like to run?',
+                        choices: [
+                            {
+                                name: 'Quick test',
+                                value: 'quick',
+                                actions: [
+                                    { name: 'Run quick test', type: 'shell' as const, command: 'npm run test:quick' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            const prespecifiedChoices = new Map([['Choose Test Mode', 'invalid-choice']]);
+            const engine = new ExecutionEngine(config, '/test/dir', prespecifiedChoices);
+
+            await expect(engine.run()).rejects.toThrow('Invalid pre-specified choice "invalid-choice" for step "Choose Test Mode". Valid choices are: quick');
+        });
+
+        it('should support pre-specified choices for multiple choice steps', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+            mockExeca.mockResolvedValue({});
+
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Choose Environment',
+                        type: 'choice' as const,
+                        prompt: 'Which environment?',
+                        choices: [
+                            {
+                                name: 'Development',
+                                value: 'dev',
+                                actions: [
+                                    { name: 'Setup dev', type: 'package-manager' as const, command: 'install', manager: 'npm' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        name: 'Choose Database',
+                        type: 'choice' as const,
+                        prompt: 'Which database?',
+                        choices: [
+                            {
+                                name: 'PostgreSQL',
+                                value: 'postgres',
+                                actions: [
+                                    { name: 'Setup postgres', type: 'package-manager' as const, command: 'install', manager: 'npm' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            const prespecifiedChoices = new Map([
+                ['Choose Environment', 'dev'],
+                ['Choose Database', 'postgres']
+            ]);
+            const engine = new ExecutionEngine(config, '/test/dir', prespecifiedChoices);
+
+            await engine.run();
+
+            // Should not prompt user for choices
+            expect(mockInquirerPrompt).not.toHaveBeenCalled();
+
+            // Should log that pre-specified choices were used
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🎯 Using pre-specified choice: Development'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🎯 Using pre-specified choice: PostgreSQL'));
+
+            // Should execute both actions
+            expect(mockExeca).toHaveBeenCalledTimes(2);
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should validate invalid post-setup choice upfront before any steps run', async () => {
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'Valid Step',
+                        type: 'shell' as const,
+                        command: 'echo "This should not run"'
+                    }
+                ],
+                post_setup: [
+                    {
+                        type: 'choice' as const,
+                        name: 'post-setup',
+                        prompt: 'Choose an option',
+                        choices: [
+                            {
+                                name: 'Option A',
+                                value: 'option-a',
+                                actions: []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            const prespecifiedChoices = new Map([['post-setup', 'invalid-option']]);
+            const engine = new ExecutionEngine(config, '/test/dir', prespecifiedChoices);
+
+            // Should fail immediately without running any steps
+            await expect(engine.run()).rejects.toThrow('Invalid pre-specified choice "invalid-option" for post-setup action "post-setup". Valid choices are: option-a');
+
+            // Verify no shell commands were executed
+            expect(mockExeca).not.toHaveBeenCalled();
+        });
+
+        it('should validate all invalid choices upfront even with mixed valid/invalid choices', async () => {
+            const config = {
+                setup_steps: [
+                    {
+                        name: 'First Choice',
+                        type: 'choice' as const,
+                        prompt: 'First choice',
+                        choices: [
+                            { name: 'Valid Option', value: 'valid', actions: [] }
+                        ]
+                    },
+                    {
+                        name: 'Second Choice',
+                        type: 'choice' as const,
+                        prompt: 'Second choice',
+                        choices: [
+                            { name: 'Another Valid', value: 'another-valid', actions: [] }
+                        ]
+                    }
+                ]
+            };
+
+            const prespecifiedChoices = new Map([
+                ['First Choice', 'valid'],        // This one is valid
+                ['Second Choice', 'invalid']      // This one is invalid
+            ]);
+            const engine = new ExecutionEngine(config, '/test/dir', prespecifiedChoices);
+
+            // Should fail on the invalid choice during upfront validation
+            await expect(engine.run()).rejects.toThrow('Invalid pre-specified choice "invalid" for step "Second Choice". Valid choices are: another-valid');
+        });
+    });
+
     describe('post_setup actions', () => {
         it('should execute post_setup message actions', async () => {
             const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
@@ -446,6 +933,54 @@ describe('ExecutionEngine', () => {
             await engine.run();
 
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Could not open browser automatically'));
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle choice actions in post_setup', async () => {
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+            mockInquirerPrompt.mockResolvedValueOnce({ choice: 'start' });
+
+            const config = {
+                setup_steps: [],
+                post_setup: [
+                    {
+                        type: 'choice',
+                        prompt: 'What would you like to do next?',
+                        choices: [
+                            {
+                                name: 'Start development server',
+                                value: 'start',
+                                actions: [
+                                    { type: 'message', content: 'Starting development server...' }
+                                ]
+                            },
+                            {
+                                name: 'Continue manually',
+                                value: 'manual',
+                                actions: [
+                                    { type: 'message', content: 'Run npm run dev when ready.' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+            const engine = new ExecutionEngine(config as any, '/test/dir');
+
+            await engine.run();
+
+            expect(mockInquirerPrompt).toHaveBeenCalledWith([{
+                type: 'list',
+                name: 'choice',
+                message: 'What would you like to do next?',
+                choices: [
+                    { name: 'Start development server', value: 'start' },
+                    { name: 'Continue manually', value: 'manual' }
+                ]
+            }]);
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('📝 Starting development server...'));
 
             consoleSpy.mockRestore();
         });

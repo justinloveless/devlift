@@ -318,6 +318,27 @@ setup_steps:
     command: "npm run db:migrate"
     depends_on: ["Start Services"]  # Ensures proper ordering
 
+  - name: "Choose Development Mode"
+    type: "choice"
+    prompt: "How would you like to run the application?"
+    choices:
+      - name: "Development mode"
+        value: "dev"
+        actions:
+          - name: "Start dev server"
+            type: "shell"
+            command: "npm run dev"
+      - name: "Production mode"
+        value: "prod"
+        actions:
+          - name: "Build for production"
+            type: "shell"
+            command: "npm run build"
+      - name: "Skip for now"
+        value: "skip"
+        actions: []
+    depends_on: ["Run Migrations"]
+
 # Post-setup actions
 post_setup:
   - type: "message"
@@ -352,6 +373,7 @@ Dependencies are resolved recursively with circular dependency detection.
 - **`docker`**: Docker commands (build, run, pull, etc.)
 - **`database`**: Database operations (migrations, seeding, etc.)
 - **`service`**: Service management commands (start/stop services)
+- **`choice`**: Interactive choice selection allowing users to pick from multiple options, each with their own actions
 
 **Supported Package Managers:**
 - Node.js: npm, yarn, pnpm, bun

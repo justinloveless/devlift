@@ -10,12 +10,35 @@ import inquirer from 'inquirer';
 import fs from 'fs-extra';
 import path from 'path';
 
+/**
+ * Parse choices string into a Map
+ * Format: "choice1=value1,choice2=value2"
+ */
+function parseChoices(choicesString?: string): Map<string, string> {
+    const choices = new Map<string, string>();
+
+    if (!choicesString) {
+        return choices;
+    }
+
+    const pairs = choicesString.split(',');
+    for (const pair of pairs) {
+        const [key, value] = pair.split('=');
+        if (key && value) {
+            choices.set(key.trim(), value.trim());
+        }
+    }
+
+    return choices;
+}
+
 const lift = new Command('lift')
     .alias('install')
     .description('Lift a repository into a local development environment')
     .argument('<repo_url_or_path>', 'The URL of the repository to lift or path to local repository')
     .option('-y, --yes', 'Skip all interactive prompts')
-    .action(async (repoInput: string, options: { yes?: boolean }) => {
+    .option('-c, --choices <choices>', 'Pre-specify choice responses (format: "choice1=value1,choice2=value2")')
+    .action(async (repoInput: string, options: { yes?: boolean; choices?: string }) => {
         // 1. Determine input type and validate
         const inputType = getInputType(repoInput);
         if (inputType === 'invalid') {
@@ -80,18 +103,21 @@ const lift = new Command('lift')
                 }
             }
 
-            // 4. Resolve dependencies first
+            // 4. Parse choices
+            const prespecifiedChoices = parseChoices(options.choices);
+
+            // 5. Resolve dependencies first
             console.log(chalk.blue('Configuration found. Starting setup...'));
             const dependencyResolver = new DependencyResolver();
             const resolvedDependencies = await dependencyResolver.resolveDependencies(config, workingPath);
 
-            // 5. Set up dependencies first
+            // 6. Set up dependencies first
             if (resolvedDependencies.length > 0) {
                 console.log(chalk.blue(`🔧 Setting up ${resolvedDependencies.length} dependencies...`));
                 for (const dependency of resolvedDependencies) {
                     if (dependency.config) {
                         console.log(chalk.cyan(`⚙️  Setting up dependency: ${dependency.name}`));
-                        const depEngine = new ExecutionEngine(dependency.config, dependency.path);
+                        const depEngine = new ExecutionEngine(dependency.config, dependency.path, prespecifiedChoices, options.yes);
                         await depEngine.run();
                         console.log(chalk.green(`✅ Dependency setup complete: ${dependency.name}`));
                     } else {
@@ -101,9 +127,9 @@ const lift = new Command('lift')
                 console.log(chalk.green('🎉 All dependencies set up successfully!'));
             }
 
-            // 6. Run execution engine for main project
+            // 7. Run execution engine for main project
             console.log(chalk.blue('🚀 Setting up main project...'));
-            const engine = new ExecutionEngine(config, workingPath);
+            const engine = new ExecutionEngine(config, workingPath, prespecifiedChoices, options.yes);
             await engine.run();
 
             console.log(chalk.green('✅ Setup complete!'));

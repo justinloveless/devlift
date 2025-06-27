@@ -3,12 +3,20 @@ import path from 'path';
 import yaml from 'js-yaml';
 import { validateConfig } from './validator.js';
 
+interface Choice {
+    name: string;
+    value: string;
+    actions: SetupStep[];
+}
+
 interface SetupStep {
     name: string;
-    type: 'shell' | 'package-manager';
-    command: string;
+    type: 'shell' | 'package-manager' | 'choice';
+    command?: string;
     depends_on?: string[];
     manager?: string;
+    prompt?: string;
+    choices?: Choice[];
 }
 
 interface ProjectDependency {
@@ -19,11 +27,19 @@ interface ProjectDependency {
     path?: string;  // For local dependencies
 }
 
+interface PostSetupChoice {
+    name: string;
+    value: string;
+    actions: PostSetupAction[];
+}
+
 interface PostSetupAction {
-    type: 'message' | 'open';
+    type: 'message' | 'open' | 'choice';
     content?: string;
     target?: string;
     path?: string;
+    prompt?: string;
+    choices?: PostSetupChoice[];
 }
 
 export interface Config {

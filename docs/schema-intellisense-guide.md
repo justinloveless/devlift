@@ -154,6 +154,47 @@ The schema validates these step types with specific properties:
 | `docker` | Docker commands | `build`, `run`, `pull`, etc. |
 | `database` | Database operations | Migration and seeding commands |
 | `service` | Service management | Start/stop service commands |
+| `choice` | Interactive choice selection | N/A (uses choices array) |
+
+#### Choice Steps
+
+Choice steps allow users to select from a list of options, each with their own actions:
+
+```json
+{
+  "name": "Choose Development Mode",
+  "type": "choice",
+  "prompt": "How would you like to run the application?",
+  "choices": [
+    {
+      "name": "Development mode",
+      "value": "dev",
+      "actions": [
+        {
+          "name": "Start dev server",
+          "type": "shell",
+          "command": "npm run dev"
+        }
+      ]
+    },
+    {
+      "name": "Skip for now",
+      "value": "skip",
+      "actions": []
+    }
+  ]
+}
+```
+
+**Choice Step Properties:**
+- `prompt` (required): Question to display to the user
+- `choices` (required): Array of choice objects
+- `depends_on` (optional): Dependencies like other step types
+
+**Choice Object Properties:**
+- `name` (required): Display name for the choice
+- `value` (required): Unique identifier for the choice
+- `actions` (required): Array of steps to execute if this choice is selected
 
 ### Environment Variables
 
@@ -170,7 +211,7 @@ Environment variable objects support:
 
 ### Post-setup Actions
 
-Two types of post-setup actions:
+Three types of post-setup actions:
 
 **Message:**
 ```json
@@ -186,6 +227,37 @@ Two types of post-setup actions:
   "type": "open",
   "target": "editor",
   "path": "."
+}
+```
+
+**Choice:**
+```json
+{
+  "type": "choice",
+  "prompt": "What would you like to do next?",
+  "choices": [
+    {
+      "name": "Start development server",
+      "value": "start",
+      "actions": [
+        {
+          "type": "message",
+          "content": "Starting server..."
+        }
+      ]
+    },
+    {
+      "name": "Open editor",
+      "value": "editor",
+      "actions": [
+        {
+          "type": "open",
+          "target": "editor",
+          "path": "."
+        }
+      ]
+    }
+  ]
 }
 ```
 

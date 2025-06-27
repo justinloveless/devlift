@@ -136,7 +136,7 @@ describe('Lift Command', () => {
 
             expect(mockClone).toHaveBeenCalledWith(repoUrl, clonePath);
             expect(mockLoadConfig).toHaveBeenCalledWith(clonePath);
-            expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, clonePath);
+            expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, clonePath, new Map(), undefined);
             expect(mockExecutionEngineRun).toHaveBeenCalled();
         });
 
@@ -161,7 +161,7 @@ describe('Lift Command', () => {
                     type: 'package-manager',
                     command: 'install'
                 }]
-            }, clonePath);
+            }, clonePath, new Map(), undefined);
             expect(mockExecutionEngineRun).toHaveBeenCalled();
         });
 
@@ -210,7 +210,7 @@ describe('Lift Command', () => {
             expect(mockPathResolve).toHaveBeenCalledWith(localPath);
             expect(mockClone).not.toHaveBeenCalled(); // Should not clone
             expect(mockLoadConfig).toHaveBeenCalledWith(resolvedPath);
-            expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, resolvedPath);
+            expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, resolvedPath, new Map(), undefined);
             expect(mockExecutionEngineRun).toHaveBeenCalled();
         });
 
@@ -233,7 +233,7 @@ describe('Lift Command', () => {
             expect(console.log).toHaveBeenCalledWith(
                 expect.stringContaining('Warning: This directory is not a Git repository.')
             );
-            expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, resolvedPath);
+            expect(mockExecutionEngine).toHaveBeenCalledWith(mockConfig, resolvedPath, new Map(), undefined);
             expect(mockExecutionEngineRun).toHaveBeenCalled();
         });
 
@@ -258,7 +258,7 @@ describe('Lift Command', () => {
                     type: 'package-manager',
                     command: 'install'
                 }]
-            }, resolvedPath);
+            }, resolvedPath, new Map(), undefined);
             expect(mockExecutionEngineRun).toHaveBeenCalled();
         });
     });

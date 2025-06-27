@@ -187,12 +187,14 @@
                             "docker-compose",
                             "docker",
                             "database",
-                            "service"
+                            "service",
+                            "choice"
                         ],
                         "examples": [
                             "package-manager",
                             "shell",
-                            "docker-compose"
+                            "docker-compose",
+                            "choice"
                         ]
                     },
                     "manager": {
@@ -227,6 +229,57 @@
                             "npm run build",
                             "docker build -t myapp ."
                         ]
+                    },
+                    "prompt": {
+                        "type": "string",
+                        "description": "Prompt to display to the user (for choice type)",
+                        "minLength": 1,
+                        "examples": [
+                            "How would you like to run the application?",
+                            "Choose your development environment:"
+                        ]
+                    },
+                    "choices": {
+                        "type": "array",
+                        "description": "Available choices for the user (for choice type)",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "name",
+                                "value"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Display name for the choice",
+                                    "minLength": 1,
+                                    "examples": [
+                                        "Development mode",
+                                        "Production mode",
+                                        "Skip for now"
+                                    ]
+                                },
+                                "value": {
+                                    "type": "string",
+                                    "description": "Internal identifier for the choice",
+                                    "minLength": 1,
+                                    "examples": [
+                                        "dev",
+                                        "prod",
+                                        "skip"
+                                    ]
+                                },
+                                "actions": {
+                                    "type": "array",
+                                    "description": "Actions to execute when this choice is selected",
+                                    "items": {
+                                        "$ref": "#/properties/setup_steps/items"
+                                    }
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "minItems": 1
                     },
                     "depends_on": {
                         "type": "array",
@@ -318,6 +371,25 @@
                                 }
                             }
                         }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "choice"
+                                }
+                            }
+                        },
+                        "then": {
+                            "required": [
+                                "prompt",
+                                "choices"
+                            ],
+                            "properties": {
+                                "command": false,
+                                "manager": false
+                            }
+                        }
                     }
                 ]
             }
@@ -336,11 +408,13 @@
                         "description": "Type of post-setup action",
                         "enum": [
                             "message",
-                            "open"
+                            "open",
+                            "choice"
                         ],
                         "examples": [
                             "message",
-                            "open"
+                            "open",
+                            "choice"
                         ]
                     },
                     "content": {
@@ -373,6 +447,57 @@
                             "src/",
                             "http://localhost:3000"
                         ]
+                    },
+                    "prompt": {
+                        "type": "string",
+                        "description": "Prompt to display to the user (for choice type)",
+                        "minLength": 1,
+                        "examples": [
+                            "Would you like to start the application now?",
+                            "Choose what to do next:"
+                        ]
+                    },
+                    "choices": {
+                        "type": "array",
+                        "description": "Available choices for the user (for choice type)",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "name",
+                                "value"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Display name for the choice",
+                                    "minLength": 1,
+                                    "examples": [
+                                        "Start development server",
+                                        "Open in editor",
+                                        "Skip for now"
+                                    ]
+                                },
+                                "value": {
+                                    "type": "string",
+                                    "description": "Internal identifier for the choice",
+                                    "minLength": 1,
+                                    "examples": [
+                                        "start",
+                                        "edit",
+                                        "skip"
+                                    ]
+                                },
+                                "actions": {
+                                    "type": "array",
+                                    "description": "Actions to execute when this choice is selected",
+                                    "items": {
+                                        "$ref": "#/properties/post_setup/items"
+                                    }
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "minItems": 1
                     }
                 },
                 "additionalProperties": false,
@@ -403,6 +528,26 @@
                             "required": [
                                 "target"
                             ]
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "choice"
+                                }
+                            }
+                        },
+                        "then": {
+                            "required": [
+                                "prompt",
+                                "choices"
+                            ],
+                            "properties": {
+                                "content": false,
+                                "target": false,
+                                "path": false
+                            }
                         }
                     }
                 ]
@@ -448,6 +593,38 @@
                     "depends_on": [
                         "Start Services"
                     ]
+                },
+                {
+                    "name": "Choose Development Mode",
+                    "type": "choice",
+                    "prompt": "How would you like to run the application?",
+                    "choices": [
+                        {
+                            "name": "Development mode",
+                            "value": "dev",
+                            "actions": [
+                                {
+                                    "type": "shell",
+                                    "command": "npm run dev"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Production mode",
+                            "value": "prod",
+                            "actions": [
+                                {
+                                    "type": "shell",
+                                    "command": "npm run build && npm start"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Skip for now",
+                            "value": "skip",
+                            "actions": []
+                        }
+                    ]
                 }
             ],
             "post_setup": [
@@ -459,6 +636,32 @@
                     "type": "open",
                     "target": "editor",
                     "path": "."
+                },
+                {
+                    "type": "choice",
+                    "prompt": "What would you like to do next?",
+                    "choices": [
+                        {
+                            "name": "Start development server",
+                            "value": "start",
+                            "actions": [
+                                {
+                                    "type": "message",
+                                    "content": "Starting development server..."
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Continue manually",
+                            "value": "manual",
+                            "actions": [
+                                {
+                                    "type": "message",
+                                    "content": "Run 'npm run dev' when you're ready to start."
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         }

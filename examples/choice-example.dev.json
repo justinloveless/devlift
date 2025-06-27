@@ -1,0 +1,159 @@
+{
+    "$schema": "https://raw.githubusercontent.com/justinloveless/devlift/main/schema/dev-config.schema.json",
+    "project_name": "Choice Step Example",
+    "version": "1",
+    "environment": {
+        "example_file": ".env.example",
+        "variables": [
+            {
+                "name": "DATABASE_URL",
+                "prompt": "Enter database connection string:",
+                "default": "postgresql://localhost:5432/myapp"
+            }
+        ]
+    },
+    "setup_steps": [
+        {
+            "name": "Install Dependencies",
+            "type": "package-manager",
+            "command": "install"
+        },
+        {
+            "name": "Choose Development Environment",
+            "type": "choice",
+            "prompt": "Which development environment would you like to set up?",
+            "choices": [
+                {
+                    "name": "Docker-based development",
+                    "value": "docker",
+                    "actions": [
+                        {
+                            "name": "Start Docker services",
+                            "type": "docker-compose",
+                            "command": "up -d"
+                        },
+                        {
+                            "name": "Run database migrations",
+                            "type": "shell",
+                            "command": "npm run db:migrate"
+                        }
+                    ]
+                },
+                {
+                    "name": "Local development",
+                    "value": "local",
+                    "actions": [
+                        {
+                            "name": "Setup local database",
+                            "type": "shell",
+                            "command": "npm run db:setup"
+                        }
+                    ]
+                },
+                {
+                    "name": "Skip environment setup",
+                    "value": "skip",
+                    "actions": []
+                }
+            ],
+            "depends_on": [
+                "Install Dependencies"
+            ]
+        },
+        {
+            "name": "Choose Build Configuration",
+            "type": "choice",
+            "prompt": "How would you like to build the application?",
+            "choices": [
+                {
+                    "name": "Development build",
+                    "value": "dev-build",
+                    "actions": [
+                        {
+                            "name": "Build for development",
+                            "type": "shell",
+                            "command": "npm run build:dev"
+                        }
+                    ]
+                },
+                {
+                    "name": "Production build",
+                    "value": "prod-build",
+                    "actions": [
+                        {
+                            "name": "Build for production",
+                            "type": "shell",
+                            "command": "npm run build:prod"
+                        },
+                        {
+                            "name": "Run tests",
+                            "type": "shell",
+                            "command": "npm test"
+                        }
+                    ]
+                },
+                {
+                    "name": "Skip build",
+                    "value": "no-build",
+                    "actions": []
+                }
+            ],
+            "depends_on": [
+                "Choose Development Environment"
+            ]
+        }
+    ],
+    "post_setup": [
+        {
+            "type": "message",
+            "content": "🎉 Setup complete! Your development environment is ready."
+        },
+        {
+            "type": "choice",
+            "prompt": "What would you like to do next?",
+            "choices": [
+                {
+                    "name": "Start development server",
+                    "value": "start-dev",
+                    "actions": [
+                        {
+                            "type": "message",
+                            "content": "🚀 Starting development server..."
+                        }
+                    ]
+                },
+                {
+                    "name": "Open project in editor",
+                    "value": "open-editor",
+                    "actions": [
+                        {
+                            "type": "open",
+                            "target": "editor",
+                            "path": "."
+                        }
+                    ]
+                },
+                {
+                    "name": "Show project info",
+                    "value": "show-info",
+                    "actions": [
+                        {
+                            "type": "message",
+                            "content": "📋 Project Information:\n\n• Run 'npm run dev' to start development\n• Run 'npm test' to run tests\n• Check README.md for more details"
+                        }
+                    ]
+                },
+                {
+                    "name": "I'll handle it manually",
+                    "value": "manual",
+                    "actions": [
+                        {
+                            "type": "message",
+                            "content": "👍 All set! You can start development when you're ready."
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -158,6 +158,51 @@ An enhanced version of the prep command that leverages AI to intelligently analy
 *   `dev prep --review` - Show AI-generated config for review before saving
 *   `dev prep --explain` - Include AI explanations as comments in the generated file
 
+### 4.5. `dev prep` Command (Guided Setup)
+A middle-ground approach between manual interactive setup and AI-powered analysis that uses built-in heuristics to detect project types and generate intelligent configuration templates.
+
+**Key Features:**
+*   **Intelligent Project Detection:** Automatically detects project types and technologies by scanning for common files:
+    *   **Node.js Projects:** `package.json`, `yarn.lock`, `pnpm-lock.yaml`, `node_modules/`
+    *   **Python Projects:** `requirements.txt`, `setup.py`, `pyproject.toml`, `Pipfile`, `poetry.lock`
+    *   **Docker Projects:** `Dockerfile`, `docker-compose.yml`, `docker-compose.yaml`
+    *   **Database Projects:** `migrations/`, `schema.sql`, `prisma/schema.prisma`
+    *   **Multi-technology Projects:** Detects and combines multiple project types
+*   **Template-Based Configuration Generation:** Uses built-in templates to generate appropriate dev.yml configurations:
+    *   Pre-defined setup steps for each detected technology
+    *   Intelligent dependency ordering between steps
+    *   Environment variable detection from `.env.example` files
+    *   Common post-setup actions based on project type
+*   **Interactive Review and Customization:** Presents generated configuration for user review and modification:
+    *   Display detected technologies and proposed setup steps
+    *   Allow editing of step names, commands, and dependencies
+    *   Add or remove setup steps
+    *   Configure environment variables and post-setup actions
+    *   Preview final configuration before saving
+
+**Workflow:**
+1.  **Project Scanning:** Scans current directory to detect project technologies and files
+2.  **Template Selection:** Selects and merges appropriate configuration templates based on detected technologies
+3.  **Configuration Generation:** Generates initial dev.yml configuration with intelligent defaults
+4.  **Interactive Review:** Presents configuration to user with options to:
+    *   Review and approve generated configuration
+    *   Edit individual setup steps and their properties
+    *   Add custom setup steps or modify existing ones
+    *   Configure environment variables and post-setup actions
+5.  **Validation and Saving:** Validates final configuration and saves to dev.yml or dev.json
+
+**Command Options:**
+*   `dev prep --guided` - Use guided setup with heuristic-based detection
+*   `dev prep --guided --review` - Generate config and open interactive editor
+*   `dev prep --guided --template <type>` - Force specific project template (node, python, docker, etc.)
+
+**Benefits:**
+*   **Faster than manual setup:** Intelligent defaults reduce configuration time
+*   **More reliable than AI:** Built-in heuristics provide consistent, tested results
+*   **No external dependencies:** Works offline without API keys or internet connection
+*   **Educational:** Shows users what each step does and why it's needed
+*   **Customizable:** Full control over final configuration while providing smart starting points
+
 ## 5. Non-Functional Requirements
 
 *   **Security:** User trust is paramount. All actions, especially shell command execution, must be transparent and require user consent by default. Secret handling must be secure (e.g., masking input). AI API keys must be stored securely and never logged.

@@ -1,0 +1,53 @@
+{
+    "$schema": "https://raw.githubusercontent.com/justinloveless/devlift/main/schema/dev-config.schema.json",
+    "project_name": "Choice Step Test",
+    "version": "1",
+    "setup_steps": [
+        {
+            "name": "Choose Test Mode",
+            "type": "choice",
+            "prompt": "Which test would you like to run?",
+            "choices": [
+                {
+                    "name": "Quick test",
+                    "value": "quick",
+                    "actions": [
+                        {
+                            "name": "Run quick test",
+                            "type": "shell",
+                            "command": "echo 'Quick test completed!'"
+                        }
+                    ]
+                },
+                {
+                    "name": "Skip test",
+                    "value": "skip",
+                    "actions": []
+                }
+            ]
+        }
+    ],
+    "post_setup": [
+        {
+            "type": "choice",
+            "prompt": "What would you like to do next?",
+            "choices": [
+                {
+                    "name": "Show completion message",
+                    "value": "message",
+                    "actions": [
+                        {
+                            "type": "message",
+                            "content": "🎉 Test completed successfully!"
+                        }
+                    ]
+                },
+                {
+                    "name": "Exit",
+                    "value": "exit",
+                    "actions": []
+                }
+            ]
+        }
+    ]
+}

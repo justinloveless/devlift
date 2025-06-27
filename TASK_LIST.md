@@ -321,4 +321,249 @@ This phase enhances the existing `dev prep` command with AI-powered analysis cap
 - **Backward Compatibility:** The existing `dev prep` command must continue to work exactly as before when no AI flags are used
 - **Graceful Degradation:** If AI analysis fails for any reason, the tool should fall back to the interactive wizard
 - **Security First:** API keys must be handled securely, and project data should not be stored by AI providers
-- **User Control:** Users should have full control over when and how AI is used, with clear opt-in behavior 
+- **User Control:** Users should have full control over when and how AI is used, with clear opt-in behavior
+
+## Phase 10: Guided Setup Implementation
+
+### Overview
+This phase implements a guided setup feature that provides a middle ground between manual interactive setup and AI-powered analysis. It uses built-in heuristics to detect project types and generate intelligent configuration templates, then allows interactive customization.
+
+### 10.1. Code Refactoring and Organization (Preparation)
+Before implementing guided setup, refactor existing code for better maintainability and organization.
+
+- [ ] **10.1.1. Refactor prep.ts Command Structure (TDD)**
+    - [ ] **Test:** Create `tests/commands/prep-base.test.ts`
+        - [ ] Test abstract base class for prep command modes
+        - [ ] Test mode selection logic (interactive, AI, guided)
+        - [ ] Test common functionality shared across modes
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** 
+        - [ ] Create `src/commands/prep-base.ts` with abstract base class
+        - [ ] Extract common prep functionality into base class
+        - [ ] Create separate mode handlers: `prep-interactive.ts`, `prep-ai.ts`
+        - [ ] Refactor existing `prep.ts` to use new structure
+    - [ ] **Run & Pass:** Ensure refactoring tests pass
+
+- [ ] **10.1.2. Extract ExecutionEngine Step Handlers (TDD)**
+    - [ ] **Test:** Create `tests/core/step-handlers.test.ts`
+        - [ ] Test individual step handler modules
+        - [ ] Test step handler factory and registration
+        - [ ] Test handler discovery and execution
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:**
+        - [ ] Create `src/core/step-handlers/` directory
+        - [ ] Extract handlers: `shell-handler.ts`, `package-manager-handler.ts`, `docker-handler.ts`, etc.
+        - [ ] Create `step-handler-factory.ts` for handler management
+        - [ ] Update `execution-engine.ts` to use extracted handlers
+    - [ ] **Run & Pass:** Ensure step handler tests pass
+
+### 10.2. Project Detection Infrastructure (TDD)
+
+- [ ] **10.2.1. Implement Project Type Detector (TDD)**
+    - [ ] **Test:** Create `tests/core/project-detector.test.ts`
+        - [ ] Test Node.js project detection (package.json, lockfiles)
+        - [ ] Test Python project detection (requirements.txt, setup.py, pyproject.toml)
+        - [ ] Test Docker project detection (Dockerfile, docker-compose.yml)
+        - [ ] Test database project detection (migrations/, schema files)
+        - [ ] Test multi-technology project detection
+        - [ ] Test unknown/unsupported project handling
+        - [ ] Test confidence scoring for detected technologies
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Create `src/core/project-detector.ts`
+        - [ ] Implement `ProjectDetector` class with methods:
+            - [ ] `detectProjectTypes(directory)` - main detection entry point
+            - [ ] `detectNodeJs(directory)` - Node.js specific detection
+            - [ ] `detectPython(directory)` - Python specific detection
+            - [ ] `detectDocker(directory)` - Docker specific detection
+            - [ ] `detectDatabase(directory)` - Database specific detection
+            - [ ] `calculateConfidence(indicators)` - confidence scoring
+    - [ ] **Run & Pass:** Ensure project detector tests pass
+
+### 10.3. Configuration Template System (TDD)
+
+- [ ] **10.3.1. Create Project Templates (TDD)**
+    - [ ] **Test:** Create `tests/templates/template-loader.test.ts`
+        - [ ] Test template loading and validation
+        - [ ] Test template merging for multi-technology projects
+        - [ ] Test template customization and overrides
+        - [ ] Test template dependency resolution
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Create template system:
+        - [ ] Create `src/templates/` directory structure
+        - [ ] Create template files: `nodejs.json`, `python.json`, `docker.json`, `database.json`
+        - [ ] Create `src/core/template-loader.ts` for template management
+        - [ ] Implement template merging and dependency resolution logic
+    - [ ] **Run & Pass:** Ensure template system tests pass
+
+- [ ] **10.3.2. Implement Configuration Generator (TDD)**
+    - [ ] **Test:** Create `tests/core/guided-config-generator.test.ts`
+        - [ ] Test config generation from single template
+        - [ ] Test config generation from multiple merged templates
+        - [ ] Test environment variable detection and integration
+        - [ ] Test dependency ordering and step relationships
+        - [ ] Test post-setup action generation
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Create `src/core/guided-config-generator.ts`
+        - [ ] Implement `GuidedConfigGenerator` class with methods:
+            - [ ] `generateConfig(detectedTypes, directory)` - main generation
+            - [ ] `mergeTemplates(templates)` - combine multiple templates
+            - [ ] `detectEnvironmentVariables(directory)` - find .env files
+            - [ ] `orderSteps(steps)` - intelligent dependency ordering
+            - [ ] `generatePostSetup(projectTypes)` - create post-setup actions
+    - [ ] **Run & Pass:** Ensure config generator tests pass
+
+### 10.4. Interactive Configuration Editor (TDD)
+
+- [ ] **10.4.1. Implement Configuration Display (TDD)**
+    - [ ] **Test:** Create `tests/core/config-editor.test.ts`
+        - [ ] Test configuration display formatting
+        - [ ] Test step details and dependency visualization
+        - [ ] Test environment variable display
+        - [ ] Test post-setup action display
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Create `src/core/config-editor.ts`
+        - [ ] Implement `ConfigEditor` class with methods:
+            - [ ] `displayConfig(config)` - show configuration overview
+            - [ ] `displaySteps(steps)` - show setup steps with details
+            - [ ] `displayEnvironment(env)` - show environment variables
+            - [ ] `displayPostSetup(actions)` - show post-setup actions
+    - [ ] **Run & Pass:** Ensure config display tests pass
+
+- [ ] **10.4.2. Implement Interactive Editing (TDD)**
+    - [ ] **Test:** Update `tests/core/config-editor.test.ts`
+        - [ ] Test step editing (name, command, dependencies)
+        - [ ] Test step addition and removal
+        - [ ] Test environment variable editing
+        - [ ] Test post-setup action editing
+        - [ ] Test configuration validation during editing
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Extend `ConfigEditor` class:
+        - [ ] `editStep(step)` - interactive step editing
+        - [ ] `addStep()` - add new setup step
+        - [ ] `removeStep(stepName)` - remove setup step
+        - [ ] `editEnvironment(env)` - edit environment variables
+        - [ ] `editPostSetup(actions)` - edit post-setup actions
+        - [ ] `validateConfig(config)` - validate during editing
+    - [ ] **Run & Pass:** Ensure interactive editing tests pass
+
+### 10.5. Guided Prep Command Implementation (TDD)
+
+- [ ] **10.5.1. Implement Guided Prep Mode (TDD)**
+    - [ ] **Test:** Create `tests/commands/prep-guided.test.ts`
+        - [ ] Test guided mode workflow end-to-end
+        - [ ] Test project detection and template selection
+        - [ ] Test configuration generation and display
+        - [ ] Test interactive review and editing
+        - [ ] Test final validation and file saving
+        - [ ] Test error handling and fallback scenarios
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Create `src/commands/prep-guided.ts`
+        - [ ] Implement `GuidedPrepMode` class extending base prep class
+        - [ ] Integrate project detection, template loading, and config generation
+        - [ ] Implement user workflow: detect → generate → review → edit → save
+        - [ ] Add proper error handling and user feedback
+    - [ ] **Run & Pass:** Ensure guided prep tests pass
+
+- [ ] **10.5.2. Integrate with Main Prep Command (TDD)**
+    - [ ] **Test:** Update `tests/commands/prep.test.ts`
+        - [ ] Test `--guided` flag functionality
+        - [ ] Test `--guided --review` flag combination
+        - [ ] Test `--guided --template <type>` flag for forced templates
+        - [ ] Test mode selection logic and fallbacks
+        - [ ] Test backward compatibility with existing flags
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Implement:** Update `src/commands/prep.ts`
+        - [ ] Add guided mode option parsing
+        - [ ] Integrate guided mode with existing prep command structure
+        - [ ] Ensure backward compatibility with interactive and AI modes
+        - [ ] Add help text and documentation for new flags
+    - [ ] **Run & Pass:** Ensure prep integration tests pass
+
+### 10.6. Template Content Creation
+
+- [ ] **10.6.1. Create Node.js Template**
+    - [ ] Create comprehensive Node.js template with:
+        - [ ] Package manager detection and installation steps
+        - [ ] Common development server setup
+        - [ ] Environment variable configuration
+        - [ ] Build and test step suggestions
+        - [ ] Post-setup actions (editor opening, server start instructions)
+
+- [ ] **10.6.2. Create Python Template**
+    - [ ] Create comprehensive Python template with:
+        - [ ] Virtual environment setup
+        - [ ] Dependency installation (pip, poetry, pipenv)
+        - [ ] Environment variable configuration
+        - [ ] Database setup for Django/Flask projects
+        - [ ] Post-setup actions and development server instructions
+
+- [ ] **10.6.3. Create Docker Template**
+    - [ ] Create comprehensive Docker template with:
+        - [ ] Docker image building steps
+        - [ ] Docker Compose service orchestration
+        - [ ] Environment variable configuration
+        - [ ] Volume and network setup
+        - [ ] Post-setup actions for container management
+
+- [ ] **10.6.4. Create Database Template**
+    - [ ] Create comprehensive database template with:
+        - [ ] Database service startup (Docker or local)
+        - [ ] Migration running steps
+        - [ ] Schema setup and seeding
+        - [ ] Connection testing
+        - [ ] Post-setup database management instructions
+
+### 10.7. Integration Testing and Documentation
+
+- [ ] **10.7.1. End-to-End Integration Tests**
+    - [ ] **Test:** Create `tests/integration/guided-setup.test.ts`
+        - [ ] Test complete guided setup workflow with real project structures
+        - [ ] Test multi-technology project handling
+        - [ ] Test error scenarios and recovery
+        - [ ] Test generated configuration validation
+        - [ ] Test integration with existing lift command
+    - [ ] **Run & Fail:** Run tests to confirm failure
+    - [ ] **Fix:** Resolve any integration issues discovered
+    - [ ] **Run & Pass:** Ensure all integration tests pass
+
+- [ ] **10.7.2. Update Documentation and Help**
+    - [ ] Update command help text for new guided mode options
+    - [ ] Create user documentation for guided setup workflow
+    - [ ] Add examples of guided setup for different project types
+    - [ ] Update CLI help output to explain guided mode benefits
+    - [ ] Document template system and customization options
+
+### 10.8. Performance and User Experience
+
+- [ ] **10.8.1. Performance Optimization**
+    - [ ] Optimize project detection for large directories
+    - [ ] Implement caching for template loading
+    - [ ] Add progress indicators for long-running operations
+    - [ ] Optimize configuration generation algorithms
+
+- [ ] **10.8.2. User Experience Enhancements**
+    - [ ] Add colorized output for better readability
+    - [ ] Implement clear progress indicators
+    - [ ] Add helpful hints and tips during workflow
+    - [ ] Provide clear error messages and recovery suggestions
+
+### 10.9. Final Integration and Testing
+
+- [ ] **10.9.1. Complete System Testing**
+    - [ ] Run full test suite to ensure no regressions
+    - [ ] Test all prep modes (interactive, AI, guided) work together
+    - [ ] Test generated configurations work with lift command
+    - [ ] Verify backward compatibility with existing functionality
+
+- [ ] **10.9.2. Commit and Update**
+    - [ ] Commit all guided setup functionality
+    - [ ] Update version number to reflect major feature addition
+    - [ ] Create detailed commit messages explaining new functionality
+    - [ ] Check off all completed tasks in this phase
+
+### Notes for Phase 10:
+- **Code Organization:** Focus on clean, modular code with proper separation of concerns
+- **Backward Compatibility:** All existing functionality must continue to work unchanged
+- **User Experience:** Prioritize clear, intuitive user interaction and helpful feedback
+- **Template Extensibility:** Design template system to be easily extensible for new project types
+- **Performance:** Ensure guided setup is fast and responsive for good user experience 
